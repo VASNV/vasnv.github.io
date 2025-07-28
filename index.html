@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Animator FX</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="background-gradient"></div>
+    <div class="container">
+        <canvas id="canvas"></canvas>
+
+        <div class="controls-panel">
+            <div class="input-group">
+                <i class="fas fa-link"></i>
+                <input type="text" id="image-url" value="https://picsum.photos/id/1025/500/500">
+            </div>
+            <div class="slider-group">
+                <i class="fas fa-th-large" title="Pixel Size"></i>
+                <input type="range" id="pixel-size" min="2" max="20" value="5" title="Pixel Size">
+            </div>
+             <div class="slider-group">
+                <i class="fas fa-shipping-fast" title="Animation Speed"></i>
+                <input type="range" id="animation-speed" min="0.5" max="5" step="0.1" value="1.5" title="Animation Speed">
+            </div>
+            <button class="btn" id="restart-button" title="Reload Image">
+                <i class="fas fa-redo"></i>
+            </button>
+        </div>
+
+        <div class="animation-selector">
+            <button class="btn anim-btn" data-anim="renderBlocks" title="Render Blocks">
+                <i class="fas fa-th"></i>
+            </button>
+            <button class="btn anim-btn" data-anim="waveReveal" title="Wave Reveal">
+                <i class="fas fa-water"></i>
+            </button>
+            <button class="btn anim-btn" data-anim="unfurl" title="Unfurl">
+                <i class="fas fa-fan"></i>
+            </button>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
