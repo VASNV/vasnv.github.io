@@ -1,335 +1,343 @@
 document.addEventListener('DOMContentLoaded', () => {
 
+    // ======================================================================
+    // --- MOCK API (Simulates a backend) ---
+    // ======================================================================
+    const QuantumNetAPI = {
+        async saveGameState(state) {
+            console.log("API: Saving state to Local Storage.", state);
+            const stateToSave = { ...state, boost: { active: false, multiplier: 1, endTime: 0 } };
+            localStorage.setItem('quantumTapperState', JSON.stringify(stateToSave));
+            return { success: true, message: "Game saved." };
+        },
+        async loadGameState() {
+            console.log("API: Loading state from Local Storage.");
+            const savedState = localStorage.getItem('quantumTapperState');
+            if (savedState) {
+                return { success: true, data: JSON.parse(savedState) };
+            }
+            return { success: false, message: "No saved game found." };
+        },
+        async getTopPlayers() {
+            console.log("API: Loading MOCK top players list.");
+            let top = [
+                { rank: 1, name: 'QuantumLeaper', score: 1.25e12 },
+                { rank: 2, name: 'ByteSmasher', score: 9.87e11 },
+                { rank: 3, name: 'ClickWizard', score: 5.43e11 },
+                { rank: 4, name: 'NanoNibbler', score: 1.23e11 },
+                { rank: 5, name: 'You', score: gameState.totalQuantumEarned }
+            ];
+            return top.sort((a, b) => b.score - a.score).map((player, index) => ({ ...player, rank: index + 1 }));
+        }
+    };
+
     // --- DOM Elements ---
-    const gameContainer = document.getElementById('game-container');
     const balanceDisplay = document.getElementById('balance-display');
+    const darkMatterDisplay = document.getElementById('dark-matter-display');
     const perClickStat = document.getElementById('per-click-stat');
     const perSecondStat = document.getElementById('per-second-stat');
+    const globalBonusStat = document.getElementById('global-bonus-stat');
     const coin = document.getElementById('coin');
     const navButtons = document.querySelectorAll('.nav-btn');
     const pages = document.querySelectorAll('.page');
     const shopContainer = document.getElementById('shop-container');
-    const boostsContainer = document.getElementById('boosts-container');
-    const topPlayersContainer = document.getElementById('top-players-container');
-    const dailyBonusModal = document.getElementById('daily-bonus-modal');
-    const claimBonusBtn = document.getElementById('claim-bonus-btn');
-    const dailyBonusAmount = document.getElementById('daily-bonus-amount');
-    const boostTimerDisplay = document.getElementById('boost-timer-display');
+    const superShopContainer = document.getElementById('super-shop-container');
+    const missionsContainer = document.getElementById('missions-container');
+    const exchangeContainer = document.getElementById('exchange-container');
+    const apiDocsContainer = document.getElementById('api-docs-container');
+    const collapseBtn = document.getElementById('collapse-btn');
 
     // --- Game State ---
     let gameState = {
         balance: 0,
+        darkMatter: 0,
+        totalQuantumEarned: 0,
+        totalClicks: 0,
+        collapseCount: 0,
+        globalBonus: 1.0,
         perClick: 1,
         perSecond: 0,
         upgrades: {},
-        lastBonusClaimed: null,
-        boost: {
-            active: false,
-            multiplier: 1,
-            endTime: 0,
-        }
+        superUpgrades: {},
+        missions: {},
     };
 
-    // ======================================================================
-    // --- API STUBS (Replace with actual backend calls) ---
-    // ======================================================================
-    const api = {
-        async saveGameState(state) {
-            console.log("Saving state to Local Storage:", state);
-            localStorage.setItem('quantumTapperState', JSON.stringify(state));
-        },
-        async loadGameState() {
-            console.log("Loading state from Local Storage.");
-            const savedState = localStorage.getItem('quantumTapperState');
-            return savedState ? JSON.parse(savedState) : null;
-        },
-        async getTopPlayers() {
-            console.log("Loading MOCK top players list.");
-            // In a real app, this would fetch from a server.
-            // We add the current player's score to the list for context.
-            let top = [
-                { rank: 1, name: 'QuantumLeaper', score: 1250000000 },
-                { rank: 2, name: 'ByteSmasher', score: 987000000 },
-                { rank: 3, name: 'ClickWizard', score: 543000000 },
-                { rank: 4, name: 'NanoNibbler', score: 123000000 },
-                { rank: 5, name: 'You', score: gameState.balance }
-            ];
-            return top.sort((a,b) => b.score - a.score).map((player, index) => ({...player, rank: index + 1}));
-        }
-    };
+    // --- Game Definitions ---
+    const COLLAPSE_REQUIREMENT = 1e9; // 1 Billion Quantum
 
-    // --- Shop & Boosts Definition ---
     const shopItems = {
-        'click_power_1': { name: 'Quantum Tap', description: '+1 per click', baseCost: 10, value: 1, type: 'perClick', icon: 'fa-hand-pointer' },
-        'auto_miner_1': { name: 'Neutrino Collector', description: '+1 per second', baseCost: 50, value: 1, type: 'perSecond', icon: 'fa-atom' },
-        'click_power_2': { name: 'Boson Amplifier', description: '+10 per click', baseCost: 500, value: 10, type: 'perClick', icon: 'fa-bolt' },
-        'auto_miner_2': { name: 'Dark Matter Harvester', description: '+5 per second', baseCost: 1000, value: 5, type: 'perSecond', icon: 'fa-satellite-dish' },
-        'click_power_3': { name: 'Singularity Tap', description: '+100 per click', baseCost: 10000, value: 100, type: 'perClick', icon: 'fa-compress-arrows-alt' },
-        'auto_miner_3': { name: 'Galaxy Grid', description: '+50 per second', baseCost: 25000, value: 50, type: 'perSecond', icon: 'fa-dungeon' }
+        'qps1': { name: 'Neutrino Collector', description: '+1 Q/s', baseCost: 50, value: 1, type: 'perSecond', icon: 'fa-atom' },
+        'qpc1': { name: 'Quantum Tap', description: '+1 Q/c', baseCost: 10, value: 1, type: 'perClick', icon: 'fa-hand-pointer' },
+        'qps2': { name: 'Dark Matter Harvester', description: '+8 Q/s', baseCost: 1000, value: 8, type: 'perSecond', icon: 'fa-satellite-dish' },
+        'qpc2': { name: 'Boson Amplifier', description: '+10 Q/c', baseCost: 500, value: 10, type: 'perClick', icon: 'fa-bolt' },
+        'qps3': { name: 'Galaxy Grid', description: '+50 Q/s', baseCost: 25000, value: 50, type: 'perSecond', icon: 'fa-dungeon' },
+        'qpc3': { name: 'Singularity Tap', description: '+100 Q/c', baseCost: 10000, value: 100, type: 'perClick', icon: 'fa-compress-arrows-alt' },
     };
 
-    const boostItems = {
-        'daily': { name: 'Daily Reward', description: 'Claim a free bonus every 24 hours.', icon: 'fa-calendar-day' },
-        'golden': { name: 'Golden Quantum', description: 'Click the flying orb for a 15s x2 click boost!', icon: 'fa-star' }
+    const superUpgrades = {
+        'su_bonus_1': { name: 'Dark Matter Protocol', description: 'Each Collapse is 5% more effective.', baseCost: 1, type: 'collapseBonus', value: 0.05, icon: 'fa-infinity' },
+        'su_click_1': { name: 'Persistent Tapping', description: '+1% of total Q/s added to Q/c.', baseCost: 5, type: 'qpsToqpc', value: 0.01, icon: 'fa-sync-alt' },
+        'su_dark_1': { name: 'Matter Compression', description: 'Gain 10% more Dark Matter on Collapse.', baseCost: 10, type: 'dmGain', value: 0.1, icon: 'fa-compress' },
+    };
+
+    const missions = {
+        'm_click_1': { name: 'First Steps', req: () => gameState.totalClicks >= 100, reward: { type: 'Q', value: 1000 } },
+        'm_click_2': { name: 'Click Enthusiast', req: () => gameState.totalClicks >= 10000, reward: { type: 'DM', value: 1 } },
+        'm_earn_1': { name: 'Getting Started', req: () => gameState.totalQuantumEarned >= 100000, reward: { type: 'Q', value: 50000 } },
+        'm_earn_2': { name: 'Millionaire', req: () => gameState.totalQuantumEarned >= 1e6, reward: { type: 'DM', value: 5 } },
+        'm_collapse_1': { name: 'Rebirth', req: () => gameState.collapseCount >= 1, reward: { type: 'DM', value: 10 } },
     };
 
     // --- Game Initialization ---
     async function init() {
-        const loadedState = await api.loadGameState();
-        if (loadedState) {
-            // Merging ensures that if we add new properties to the default state, old saves don't break the game.
-            gameState = { ...gameState, ...loadedState, boost: gameState.boost }; // Don't persist boosts
+        const response = await QuantumNetAPI.loadGameState();
+        if (response.success) {
+            gameState = { ...gameState, ...response.data };
         }
 
         coin.addEventListener('click', handleCoinClick);
         navButtons.forEach(btn => btn.addEventListener('click', handleNavClick));
-        claimBonusBtn.addEventListener('click', claimDailyBonus);
-        
+        collapseBtn.addEventListener('click', handleCollapse);
+        shopContainer.addEventListener('click', (e) => handleShopBuy(e, 'standard'));
+        superShopContainer.addEventListener('click', (e) => handleShopBuy(e, 'super'));
+        missionsContainer.addEventListener('click', handleMissionClaim);
+
         setInterval(gameTick, 100);
-        setInterval(() => api.saveGameState(gameState), 10000);
+        setInterval(() => QuantumNetAPI.saveGameState(gameState), 10000);
 
         renderAllTabs();
-        checkDailyBonus();
-        // Start spawning the golden quantum after a delay
-        setTimeout(spawnGoldenQuantum, 15000 + Math.random() * 15000);
     }
 
-    // --- Core Game Loop ---
+    // --- Core Game Loop & UI Updates ---
     function gameTick() {
-        gameState.balance += gameState.perSecond / 10;
-        
-        if (gameState.boost.active && Date.now() > gameState.boost.endTime) {
-            gameState.boost.active = false;
-            gameState.boost.multiplier = 1;
-        }
-        
+        const finalPassiveGain = (gameState.perSecond * gameState.globalBonus) / 10;
+        gameState.balance += finalPassiveGain;
+        gameState.totalQuantumEarned += finalPassiveGain;
         updateUIDisplays();
+        checkMissions();
     }
 
-    // --- UI Update & Rendering ---
     function updateUIDisplays() {
-        balanceDisplay.textContent = Math.floor(gameState.balance).toLocaleString();
-        perClickStat.textContent = (gameState.perClick * gameState.boost.multiplier).toLocaleString();
-        perSecondStat.textContent = gameState.perSecond.toLocaleString();
-
-        if (gameState.boost.active) {
-            const timeLeft = Math.ceil((gameState.boost.endTime - Date.now()) / 1000);
-            boostTimerDisplay.textContent = `x${gameState.boost.multiplier} Click Boost: ${timeLeft}s left`;
-            boostTimerDisplay.style.display = 'block';
-        } else {
-            boostTimerDisplay.style.display = 'none';
-        }
+        balanceDisplay.textContent = formatNumber(gameState.balance);
+        darkMatterDisplay.textContent = formatNumber(gameState.darkMatter);
+        perClickStat.textContent = formatNumber(getClickValue());
+        perSecondStat.textContent = formatNumber(getPassiveValue());
+        globalBonusStat.textContent = `${((gameState.globalBonus - 1) * 100).toFixed(0)}`;
+        collapseBtn.disabled = gameState.balance < COLLAPSE_REQUIREMENT;
+        // Dynamically update shop button states
+        updateShopButtonStates(shopContainer, shopItems, 'balance');
+        updateShopButtonStates(superShopContainer, superUpgrades, 'darkMatter');
     }
 
     function renderAllTabs() {
-        renderShop();
-        renderBoosts();
-        renderTopPlayers();
+        renderShop(shopContainer, shopItems, 'balance');
+        renderShop(superShopContainer, superUpgrades, 'darkMatter');
+        renderMissions();
+        renderExchange();
+        renderDeveloperAPI();
     }
 
-    function renderShop() {
-        shopContainer.innerHTML = '';
-        for (const id in shopItems) {
-            const item = shopItems[id];
-            const level = gameState.upgrades[id] || 0;
+    // --- Rendering Functions ---
+    function renderShop(container, items, currency) {
+        container.innerHTML = '';
+        for (const id in items) {
+            const item = items[id];
+            const level = (currency === 'balance' ? gameState.upgrades[id] : gameState.superUpgrades[id]) || 0;
             const cost = calculateCost(item.baseCost, level);
-            
-            const itemElement = document.createElement('div');
-            itemElement.className = 'list-item';
-            itemElement.innerHTML = `
-                <div class="icon"><i class="fas ${item.icon}"></i></div>
-                <div class="info">
-                    <h3>${item.name}</h3>
-                    <p>${item.description} (Level: ${level})</p>
-                </div>
-                <button class="btn-primary buy-button" data-id="${id}">
-                    ${cost.toLocaleString()} Q
-                </button>
-            `;
-            shopContainer.appendChild(itemElement);
-        }
-        updateShopButtons(); // Set initial button states
-    }
-
-    function renderBoosts() {
-        boostsContainer.innerHTML = '';
-        for (const id in boostItems) {
-            const boost = boostItems[id];
-            const boostElement = document.createElement('div');
-            boostElement.className = 'list-item';
-            boostElement.innerHTML = `
-                <div class="icon"><i class="fas ${boost.icon}"></i></div>
-                <div class="info">
-                    <h3>${boost.name}</h3>
-                    <p>${boost.description}</p>
-                </div>
-            `;
-            boostsContainer.appendChild(boostElement);
+            container.innerHTML += `
+                <div class="list-item">
+                    <div class="icon"><i class="fas ${item.icon}"></i></div>
+                    <div class="info">
+                        <h3>${item.name}</h3>
+                        <p>${item.description} (Level: ${level})</p>
+                    </div>
+                    <button class="btn-primary buy-button" data-id="${id}">
+                        ${formatNumber(cost)} ${currency === 'balance' ? 'Q' : 'DM'}
+                    </button>
+                </div>`;
         }
     }
 
-    async function renderTopPlayers() {
-        topPlayersContainer.innerHTML = `<p>Loading...</p>`;
-        const players = await api.getTopPlayers();
-        topPlayersContainer.innerHTML = '';
-        players.forEach(player => {
-            const playerElement = document.createElement('div');
-            playerElement.className = 'list-item';
-            playerElement.innerHTML = `
-                <div class="icon">#${player.rank}</div>
+    function renderMissions() {
+        missionsContainer.innerHTML = '';
+        for (const id in missions) {
+            const mission = missions[id];
+            const isCompleted = gameState.missions[id];
+            const canComplete = mission.req();
+
+            missionsContainer.innerHTML += `
+                <div class="list-item mission-item ${isCompleted ? 'completed' : ''}">
+                    <div class="icon"><i class="fas fa-tasks"></i></div>
+                    <div class="info">
+                        <h3>${mission.name}</h3>
+                        <p>Reward: ${mission.reward.value.toLocaleString()} ${mission.reward.type}</p>
+                    </div>
+                    <button class="btn-primary claim-button" data-id="${id}" ${(!canComplete || isCompleted) ? 'disabled' : ''}>
+                        ${isCompleted ? 'Claimed' : 'Claim'}
+                    </button>
+                </div>`;
+        }
+    }
+
+    function renderExchange() {
+        exchangeContainer.innerHTML = `
+            <div class="list-item">
+                <div class="icon"><i class="fas fa-exchange-alt"></i></div>
                 <div class="info">
-                    <h3>${player.name}</h3>
-                    <p>${Math.floor(player.score).toLocaleString()} Q</p>
+                    <h3>Quantum Swap</h3>
+                    <p>Exchange 1 Trillion Q for 1 DM.</p>
                 </div>
-            `;
-            if (player.name === 'You') {
-                playerElement.style.border = '2px solid var(--primary-color)';
+                <button class="btn-primary" id="exchange-btn" ${gameState.balance < 1e12 ? 'disabled' : ''}>Swap</button>
+            </div>`;
+        document.getElementById('exchange-btn')?.addEventListener('click', () => {
+            if (gameState.balance >= 1e12) {
+                gameState.balance -= 1e12;
+                gameState.darkMatter += 1;
+                renderExchange(); // Re-render to update button state
             }
-            topPlayersContainer.appendChild(playerElement);
         });
     }
 
-    function updateShopButtons() {
-        const buttons = shopContainer.querySelectorAll('.buy-button');
-        buttons.forEach(button => {
+    function renderDeveloperAPI() {
+        apiDocsContainer.innerHTML = `
+            <div class="api-method">
+                <h3>Get Wallet Balance</h3>
+                <p>Retrieve the current balance of a specified user.</p>
+                <pre><code>QuantumNetAPI.getWalletBalance(
+    <span class="key">apiKey</span>: <span class="string">"YOUR_API_KEY"</span>,
+    <span class="key">userId</span>: <span class="string">"USER_ID_HERE"</span>
+)</code></pre>
+            </div>
+             <div class="api-method">
+                <h3>Transfer Currency</h3>
+                <p>Transfer Quantum (Q) or Dark Matter (DM) between users.</p>
+                <pre><code>QuantumNetAPI.transferCurrency(
+    <span class="key">apiKey</span>: <span class="string">"YOUR_API_KEY"</span>,
+    <span class="key">fromUserId</span>: <span class="string">"SENDER_USER_ID"</span>,
+    <span class="key">toUserId</span>: <span class="string">"RECIPIENT_USER_ID"</span>,
+    <span class="key">amount</span>: <span class="number">1000</span>,
+    <span class="key">currency</span>: <span class="string">"Q"</span>
+)</code></pre>
+            </div>`;
+    }
+
+    // --- Gameplay Logic ---
+    function handleCoinClick(e) {
+        const clickValue = getClickValue();
+        gameState.balance += clickValue;
+        gameState.totalQuantumEarned += clickValue;
+        gameState.totalClicks++;
+    }
+
+    function getClickValue() {
+        let baseClick = gameState.perClick;
+        const qpsToqpcLevels = gameState.superUpgrades['su_click_1'] || 0;
+        if (qpsToqpcLevels > 0) {
+            const bonus = gameState.perSecond * (superUpgrades['su_click_1'].value * qpsToqpcLevels);
+            baseClick += bonus;
+        }
+        return baseClick * gameState.globalBonus;
+    }
+    
+    function getPassiveValue() {
+        return gameState.perSecond * gameState.globalBonus;
+    }
+
+    function handleShopBuy(event, type) {
+        if (!event.target.matches('.buy-button')) return;
+        const id = event.target.dataset.id;
+        const items = type === 'standard' ? shopItems : superUpgrades;
+        const stateKey = type === 'standard' ? 'upgrades' : 'superUpgrades';
+        const currency = type === 'standard' ? 'balance' : 'darkMatter';
+
+        const item = items[id];
+        const level = gameState[stateKey][id] || 0;
+        const cost = calculateCost(item.baseCost, level);
+
+        if (gameState[currency] >= cost) {
+            gameState[currency] -= cost;
+            gameState[stateKey][id] = level + 1;
+            if (item.type === 'perClick') gameState.perClick += item.value;
+            if (item.type === 'perSecond') gameState.perSecond += item.value;
+            renderShop(event.currentTarget, items, currency);
+        }
+    }
+
+    function handleMissionClaim(event) {
+        if (!event.target.matches('.claim-button')) return;
+        const id = event.target.dataset.id;
+        if (gameState.missions[id] || !missions[id].req()) return;
+
+        const reward = missions[id].reward;
+        if (reward.type === 'Q') gameState.balance += reward.value;
+        if (reward.type === 'DM') gameState.darkMatter += reward.value;
+
+        gameState.missions[id] = true;
+        renderMissions();
+    }
+    
+    function checkMissions() {
+        // This function enables claim buttons if requirements are met
+        missionsContainer.querySelectorAll('.claim-button:disabled').forEach(button => {
             const id = button.dataset.id;
-            const level = gameState.upgrades[id] || 0;
-            const cost = calculateCost(shopItems[id].baseCost, level);
-            button.disabled = gameState.balance < cost;
+            if(!gameState.missions[id] && missions[id].req()) {
+                button.disabled = false;
+            }
         });
     }
 
-    // --- Event Handlers ---
-    function handleCoinClick(event) {
-        const earnings = gameState.perClick * gameState.boost.multiplier;
-        gameState.balance += earnings;
-        createFloatingText(event, `+${earnings.toLocaleString()}`);
-    }
+    function handleCollapse() {
+        if (gameState.balance < COLLAPSE_REQUIREMENT) return;
+        
+        const dmGainBonusLevels = gameState.superUpgrades['su_dark_1'] || 0;
+        const dmGainMultiplier = 1 + (superUpgrades['su_dark_1'].value * dmGainBonusLevels);
+        const darkMatterGained = Math.floor(Math.sqrt(gameState.balance / 1e7) * dmGainMultiplier);
+        
+        const collapseBonusLevels = gameState.superUpgrades['su_bonus_1'] || 0;
+        const collapseBonusIncrease = 0.02 + (superUpgrades['su_bonus_1'].value * collapseBonusLevels);
 
+        gameState.darkMatter += darkMatterGained;
+        gameState.globalBonus += collapseBonusIncrease;
+        gameState.collapseCount++;
+
+        // Reset progress
+        gameState.balance = 0;
+        gameState.perClick = 1;
+        gameState.perSecond = 0;
+        gameState.upgrades = {};
+        gameState.totalQuantumEarned = 0;
+        gameState.totalClicks = 0;
+
+        alert(`Universe Collapsed! You gained ${darkMatterGained} Dark Matter and a permanent production bonus!`);
+        renderAllTabs();
+    }
+    
+    // --- Navigation & Helpers ---
     function handleNavClick(event) {
         const targetId = event.currentTarget.dataset.target;
         navButtons.forEach(btn => btn.classList.remove('active'));
         event.currentTarget.classList.add('active');
         pages.forEach(page => page.classList.toggle('active', page.id === targetId));
-        
-        if (targetId === 'shop-page') renderShop();
         if (targetId === 'top-page') renderTopPlayers();
     }
 
-    shopContainer.addEventListener('click', (event) => {
-        if (event.target.classList.contains('buy-button')) {
-            buyItem(event.target.dataset.id);
-        }
-    });
-
-    function buyItem(id) {
-        const item = shopItems[id];
-        const level = gameState.upgrades[id] || 0;
-        const cost = calculateCost(item.baseCost, level);
-
-        if (gameState.balance >= cost) {
-            gameState.balance -= cost;
-            gameState.upgrades[id] = level + 1;
-            
-            if (item.type === 'perClick') gameState.perClick += item.value;
-            if (item.type === 'perSecond') gameState.perSecond += item.value;
-            
-            renderShop(); // Re-render the shop to update costs and levels
-        }
+    function calculateCost(base, level) {
+        return Math.floor(base * Math.pow(1.2, level));
     }
     
-    function calculateCost(base, level) {
-        return Math.floor(base * Math.pow(1.18, level));
+    function formatNumber(num) {
+        if (num < 1e6) return Math.floor(num).toLocaleString();
+        return num.toExponential(2).replace('+', '');
     }
 
-    // --- Bonus & Boost Logic ---
-    function checkDailyBonus() {
-        const today = new Date().toDateString();
-        if(gameState.lastBonusClaimed !== today) {
-            const bonus = Math.floor(boostItems.daily.baseValue + gameState.perSecond * 120); // 2 mins of passive income
-            dailyBonusAmount.textContent = `${bonus.toLocaleString()} Q`;
-            dailyBonusModal.dataset.bonus = bonus;
-            dailyBonusModal.classList.remove('hidden');
-        }
+    function updateShopButtonStates(container, items, currency) {
+        container.querySelectorAll('.buy-button').forEach(button => {
+            const id = button.dataset.id;
+            const level = (currency === 'balance' ? gameState.upgrades[id] : gameState.superUpgrades[id]) || 0;
+            const cost = calculateCost(items[id].baseCost, level);
+            button.disabled = gameState[currency] < cost;
+        });
     }
-
-    function claimDailyBonus() {
-        const bonusValue = parseInt(dailyBonusModal.dataset.bonus);
-        gameState.balance += bonusValue;
-        gameState.lastBonusClaimed = new Date().toDateString();
-        dailyBonusModal.classList.add('hidden');
-    }
-
-    function spawnGoldenQuantum() {
-        const golden = document.createElement('div');
-        golden.className = 'golden-quantum';
-        golden.innerHTML = `<i class="fas fa-star"></i>`;
-
-        // Random start and end points
-        const startX = Math.random() > 0.5 ? -50 : gameContainer.clientWidth + 50;
-        const startY = Math.random() * gameContainer.clientHeight;
-        const endX = gameContainer.clientWidth - startX;
-        const endY = Math.random() * gameContainer.clientHeight;
-
-        golden.style.left = `${startX}px`;
-        golden.style.top = `${startY}px`;
-
-        gameContainer.appendChild(golden);
-        
-        // Use requestAnimationFrame for smooth animation
-        setTimeout(() => {
-            golden.style.transition = 'transform 5s linear';
-            golden.style.transform = `translate(${endX - startX}px, ${endY - startY}px)`;
-        }, 100);
-
-        golden.addEventListener('click', () => {
-            activateBoost(2, 15000); // 2x multiplier for 15 seconds
-            golden.remove();
-        }, { once: true });
-
-        setTimeout(() => golden.remove(), 5100); // Clean up if not clicked
-        setTimeout(spawnGoldenQuantum, 30000 + Math.random() * 30000); // Spawn next one in 30-60 seconds
-    }
-
-    function activateBoost(multiplier, duration) {
-        if (gameState.boost.active) return;
-        gameState.boost.active = true;
-        gameState.boost.multiplier = multiplier;
-        gameState.boost.endTime = Date.now() + duration;
-    }
-
-    function createFloatingText(event, text) {
-        const el = document.createElement('div');
-        el.textContent = text;
-        el.className = 'floating-text'; // You need to style this class in CSS
-        el.style.left = `${event.clientX}px`;
-        el.style.top = `${event.clientY}px`;
-        document.body.appendChild(el);
-        el.addEventListener('animationend', () => el.remove());
-    }
-    // Add CSS for .floating-text (copied from a previous response for completeness)
-    const styleSheet = document.createElement("style");
-    styleSheet.type = "text/css";
-    styleSheet.innerText = `
-        .floating-text {
-            position: fixed;
-            font-size: 1.5em;
-            font-weight: 600;
-            color: var(--primary-color);
-            pointer-events: none;
-            animation: float-up 1.5s ease-out forwards;
-            text-shadow: 0 0 5px white;
-            z-index: 9999;
-        }
-        @keyframes float-up {
-            to {
-                transform: translateY(-150px);
-                opacity: 0;
-            }
-        }
-    `;
-    document.head.appendChild(styleSheet);
-
 
     // --- Let's go! ---
     init();
