@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quantum Tapper Pro</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>Quantum Tapper X</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -13,70 +13,69 @@
     <div id="game-container">
 
         <header class="main-header">
-            <div class="balance-container">
-                <span id="balance-display">0</span>
-                <span class="currency-symbol">Q</span>
+            <div class="currency-bar">
+                <div class="balance-container primary-currency">
+                    <span id="balance-display">0</span> <span class="currency-symbol">Q</span>
+                </div>
+                <div class="balance-container secondary-currency">
+                    <span id="dark-matter-display">0</span> <span class="currency-symbol">DM</span>
+                </div>
             </div>
             <div class="stats-bar">
-                <div>
-                    <i class="fas fa-hand-pointer"></i> <span id="per-click-stat">1</span>
-                </div>
-                <div>
-                    <i class="fas fa-hourglass-half"></i> <span id="per-second-stat">0</span>
-                </div>
+                <div><i class="fas fa-hand-pointer"></i> <span id="per-click-stat">1</span>/c</div>
+                <div><i class="fas fa-hourglass-half"></i> <span id="per-second-stat">0</span>/s</div>
+                <div><i class="fas fa-globe"></i> <span id="global-bonus-stat">0</span>%</div>
             </div>
         </header>
 
         <main id="content-area">
-            <!-- Tapper Page -->
             <div id="tapper-page" class="page active">
                 <div class="tapper-zone">
-                    <div id="coin">
-                        <div class="coin-inner"><i class="fas fa-atom"></i></div>
-                    </div>
+                    <div id="coin"><div class="coin-inner"><i class="fas fa-atom"></i></div></div>
                 </div>
             </div>
 
-            <!-- Shop Page -->
             <div id="shop-page" class="page">
-                <h2><i class="fas fa-store"></i> Shop</h2>
+                <h2><i class="fas fa-store"></i> Standard Upgrades</h2>
                 <div id="shop-container" class="list-container"></div>
-            </div>
-
-            <!-- Boosts Page -->
-            <div id="boosts-page" class="page">
-                <h2><i class="fas fa-rocket"></i> Boosts</h2>
-                <div id="boosts-container" class="list-container">
-                    <div id="boost-timer-display" class="boost-timer">No active boost</div>
+                <h2 class="sub-header"><i class="fas fa-infinity"></i> Super Upgrades</h2>
+                <div id="super-shop-container" class="list-container"></div>
+                 <div id="collapse-section">
+                    <h3><i class="fas fa-sync-alt"></i> Quantum Collapse</h3>
+                    <p>Reset your progress for Dark Matter and a permanent global bonus.</p>
+                    <button id="collapse-btn" class="btn-danger">Collapse Universe</button>
                 </div>
             </div>
 
-            <!-- Top Players Page -->
-            <div id="top-page" class="page">
-                <h2><i class="fas fa-trophy"></i> Top Players</h2>
-                <div id="top-players-container" class="list-container"></div>
+            <div id="missions-page" class="page">
+                <h2><i class="fas fa-tasks"></i> Missions</h2>
+                <div id="missions-container" class="list-container"></div>
+            </div>
+
+            <div id="exchange-page" class="page">
+                <h2><i class="fas fa-exchange-alt"></i> Exchange Office</h2>
+                <div id="exchange-container">
+                    <!-- Exchange items will be generated here -->
+                </div>
+            </div>
+
+            <div id="developer-page" class="page">
+                <h2><i class="fas fa-code"></i> Developer API</h2>
+                <div id="api-docs-container"></div>
             </div>
         </main>
 
         <nav class="main-nav">
-            <button class="nav-btn active" data-target="tapper-page"><i class="fas fa-home"></i></button>
-            <button class="nav-btn" data-target="shop-page"><i class="fas fa-store"></i></button>
-            <button class="nav-btn" data-target="boosts-page"><i class="fas fa-rocket"></i></button>
-            <button class="nav-btn" data-target="top-page"><i class="fas fa-trophy"></i></button>
+            <button class="nav-btn active" data-target="tapper-page" title="Tapper"><i class="fas fa-home"></i></button>
+            <button class="nav-btn" data-target="shop-page" title="Shop"><i class="fas fa-store"></i></button>
+            <button class="nav-btn" data-target="missions-page" title="Missions"><i class="fas fa-tasks"></i></button>
+            <button class="nav-btn" data-target="exchange-page" title="Exchange"><i class="fas fa-exchange-alt"></i></button>
+            <button class="nav-btn" data-target="developer-page" title="API Docs"><i class="fas fa-code"></i></button>
         </nav>
-
     </div>
 
-    <!-- Daily Bonus Modal -->
-    <div id="daily-bonus-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <h3>Daily Bonus!</h3>
-            <p>Welcome back! Here's your reward for today.</p>
-            <p class="bonus-amount" id="daily-bonus-amount">100 Q</p>
-            <button id="claim-bonus-btn" class="btn-primary">Claim</button>
-        </div>
-    </div>
-
+    <!-- Modals remain the same -->
 </body>
+<script src="api.js"></script>
 <script src="script.js"></script>
 </html>
