@@ -1,0 +1,240 @@
+:root {
+    --primary-glow: #00c6ff;
+    --secondary-glow: #0072ff;
+    --text-color: #f0f0f0;
+    --panel-bg: rgba(20, 20, 30, 0.65);
+    --border-color: rgba(0, 198, 255, 0.3);
+    --success-color: #4CAF50;
+    --error-color: #F44336;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #0d0d1a;
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+.background-effects {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 150vmax;
+    height: 150vmax;
+    background: radial-gradient(circle, rgba(0, 198, 255, 0.15) 0%, rgba(0, 114, 255, 0) 60%);
+    animation: rotateBG 40s linear infinite;
+    z-index: -1;
+}
+
+@keyframes rotateBG {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+#game-container {
+    width: 100%;
+    max-width: 400px;
+    height: 95vh;
+    max-height: 800px;
+    background: var(--panel-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    padding: 1.5em;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Header & Balance */
+.main-header {
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1em;
+}
+
+.title {
+    font-weight: 300;
+    font-size: 1.5em;
+    letter-spacing: 2px;
+    opacity: 0.8;
+}
+
+.balance-container {
+    font-size: 3em;
+    font-weight: 600;
+    margin-top: 0.1em;
+    text-shadow: 0 0 15px var(--primary-glow);
+}
+.currency-symbol {
+    color: var(--primary-glow);
+}
+
+/* The Coin */
+.tapper-zone {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#coin {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #a0e8ff, var(--secondary-glow));
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    box-shadow: 0 0 20px var(--secondary-glow), 0 0 40px var(--primary-glow), inset 0 0 20px rgba(0,0,0,0.4);
+    transition: transform 0.1s ease-out;
+    animation: pulse 4s infinite ease-in-out;
+}
+
+#coin:active {
+    transform: scale(0.95);
+    animation: none;
+}
+
+.coin-inner {
+    font-size: 5em;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.8);
+    text-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); box-shadow: 0 0 20px var(--secondary-glow), 0 0 40px var(--primary-glow), inset 0 0 20px rgba(0,0,0,0.4); }
+    50% { transform: scale(1.05); box-shadow: 0 0 30px var(--primary-glow), 0 0 60px var(--primary-glow), inset 0 0 20px rgba(0,0,0,0.4); }
+    100% { transform: scale(1); box-shadow: 0 0 20px var(--secondary-glow), 0 0 40px var(--primary-glow), inset 0 0 20px rgba(0,0,0,0.4); }
+}
+
+/* Floating Click Text */
+.floating-text {
+    position: absolute;
+    font-size: 1.5em;
+    font-weight: 600;
+    color: var(--primary-glow);
+    pointer-events: none;
+    animation: float-up 1.5s ease-out forwards;
+    text-shadow: 0 0 5px white;
+}
+
+@keyframes float-up {
+    to {
+        transform: translateY(-100px);
+        opacity: 0;
+    }
+}
+
+/* Stats Bar */
+.stats-bar {
+    display: flex;
+    justify-content: space-around;
+    padding: 0.8em 0;
+    background: rgba(0,0,0,0.2);
+    border-radius: 10px;
+    margin-bottom: 1em;
+}
+.stat-label {
+    opacity: 0.7;
+}
+.stat-value {
+    font-weight: 600;
+    margin-left: 0.5em;
+}
+
+/* Shop */
+.shop-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8em;
+    overflow-y: auto;
+    padding-right: 10px; /* for scrollbar */
+}
+.shop-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    background: rgba(0,0,0,0.3);
+    padding: 0.8em 1.2em;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
+}
+.shop-item:hover {
+    border-color: var(--border-color);
+}
+.item-info h3 {
+    font-weight: 400;
+    font-size: 1em;
+}
+.item-info p {
+    font-size: 0.8em;
+    opacity: 0.6;
+}
+.buy-button {
+    background: linear-gradient(45deg, var(--primary-glow), var(--secondary-glow));
+    border: none;
+    color: white;
+    padding: 0.6em 1.2em;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: 0 0 10px rgba(0, 198, 255, 0.3);
+}
+.buy-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(0, 198, 255, 0.6);
+}
+.buy-button:disabled {
+    background: #555;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+.item-cost {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.9em;
+    font-weight: 600;
+}
+.item-level {
+    font-size: 0.8em;
+    opacity: 0.8;
+    margin-top: 2px;
+}
+
+/* Notification */
+.notification {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.8em 1.5em;
+    border-radius: 10px;
+    opacity: 0;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    pointer-events: none;
+}
+.notification.show {
+    opacity: 1;
+    transform: translate(-50%, -10px);
+}
+.notification.error {
+    background-color: var(--error-color);
+}
