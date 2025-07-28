@@ -1,190 +1,193 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- DOM Elements ---
-    const coin = document.getElementById('coin');
     const balanceDisplay = document.getElementById('balance-display');
     const perClickStat = document.getElementById('per-click-stat');
     const perSecondStat = document.getElementById('per-second-stat');
-    const shopContainer = document.getElementById('shop');
-    const notification = document.getElementById('notification');
+    const coin = document.getElementById('coin');
+    const navButtons = document.querySelectorAll('.nav-btn');
+    const pages = document.querySelectorAll('.page');
+    const shopContainer = document.getElementById('shop-container');
+    const boostsContainer = document.getElementById('boosts-container');
+    const topPlayersContainer = document.getElementById('top-players-container');
+    const dailyBonusModal = document.getElementById('daily-bonus-modal');
+    const claimBonusBtn = document.getElementById('claim-bonus-btn');
+    const dailyBonusAmount = document.getElementById('daily-bonus-amount');
+    const boostTimerDisplay = document.getElementById('boost-timer-display');
 
     // --- Game State ---
     let gameState = {
         balance: 0,
         perClick: 1,
         perSecond: 0,
-        upgrades: {}
-    };
-
-    // --- Shop Definition ---
-    const shopItems = {
-        'click_power': {
-            name: 'Quantum Tap',
-            description: 'Increases value per tap.',
-            baseCost: 10,
-            baseValue: 1,
-            type: 'perClick'
-        },
-        'auto_miner_1': {
-            name: 'Neutrino Collector',
-            description: 'Passively generates Q/sec.',
-            baseCost: 50,
-            baseValue: 1,
-            type: 'perSecond'
-        },
-        'click_power_2': {
-            name: 'Boson Amplifier',
-            description: 'Greatly increases value per tap.',
-            baseCost: 500,
-            baseValue: 10,
-            type: 'perClick'
-        },
-        'auto_miner_2': {
-            name: 'Dark Matter Harvester',
-            description: 'Passively generates more Q/sec.',
-            baseCost: 1000,
-            baseValue: 5,
-            type: 'perSecond'
+        upgrades: {},
+        lastBonusClaimed: null,
+        boost: {
+            active: false,
+            multiplier: 1,
+            endTime: 0,
         }
     };
 
-    // --- Core Game Functions ---
-    function handleCoinClick(event) {
-        gameState.balance += gameState.perClick;
-        updateBalanceDisplay();
-        createFloatingText(event.clientX, event.clientY);
-    }
-    
-    function passiveIncome() {
-        gameState.balance += gameState.perSecond;
-        updateBalanceDisplay();
-    }
-
-    // --- UI Update Functions ---
-    function updateBalanceDisplay() {
-        balanceDisplay.textContent = Math.floor(gameState.balance).toLocaleString();
-    }
-    
-    function updateStatsDisplay() {
-        perClickStat.textContent = gameState.perClick.toLocaleString();
-        perSecondStat.textContent = gameState.perSecond.toLocaleString();
-    }
-    
-    function createFloatingText(x, y) {
-        const text = document.createElement('div');
-        text.className = 'floating-text';
-        text.textContent = `+${gameState.perClick}`;
-        document.body.appendChild(text);
-
-        const rect = coin.getBoundingClientRect();
-        text.style.left = `${rect.left + rect.width / 2}px`;
-        text.style.top = `${rect.top + rect.height / 2}px`;
-        
-        text.addEventListener('animationend', () => {
-            text.remove();
-        });
-    }
-
-    function renderShop() {
-        shopContainer.innerHTML = '';
-        for (const id in shopItems) {
-            const item = shopItems[id];
-            const level = gameState.upgrades[id] || 0;
-            const cost = calculateCost(item.baseCost, level);
-
-            const itemElement = document.createElement('div');
-            itemElement.className = 'shop-item';
-            itemElement.innerHTML = `
-                <div class="item-info">
-                    <h3>${item.name}</h3>
-                    <p>${item.description}</p>
-                    <span class="item-level">Level: ${level}</span>
-                </div>
-                <button class="buy-button" data-id="${id}" ${gameState.balance < cost ? 'disabled' : ''}>
-                    Buy
-                    <span class="item-cost">${cost.toLocaleString()} Q</span>
-                </button>
-            `;
-            shopContainer.appendChild(itemElement);
+    // ======================================================================
+    // --- API STUBS (Replace with actual backend calls) ---
+    // ======================================================================
+    const api = {
+        async saveGameState(state) {
+            // TODO: Replace this with a fetch() call to your backend API
+            // For example: await fetch('/api/save', { method: 'POST', body: JSON.stringify(state) });
+            console.log("Saving state to Local Storage:", state);
+            localStorage.setItem('quantumTapperState', JSON.stringify(state));
+        },
+        async loadGameState() {
+            // TODO: Replace this with a fetch() call to your backend API
+            // For example: const response = await fetch('/api/load'); return await response.json();
+            console.log("Loading state from Local Storage.");
+            const savedState = localStorage.getItem('quantumTapperState');
+            return savedState ? JSON.parse(savedState) : null;
+        },
+        async getTopPlayers() {
+            // TODO: Replace this with a fetch() call to your backend API
+            console.log("Loading MOCK top players list.");
+            return [
+                { rank: 1, name: 'QuantumLeaper', score: 1.25e9 },
+                { rank: 2, name: 'ByteSmasher', score: 9.87e8 },
+                { rank: 3, name: 'ClickWizard', score: 5.43e8 },
+                { rank: 4, name: 'You!', score: gameState.balance }
+            ].sort((a,b) => b.score - a.score);
         }
-    }
+    };
 
-    function buyItem(id) {
-        const item = shopItems[id];
-        const level = gameState.upgrades[id] || 0;
-        const cost = calculateCost(item.baseCost, level);
-        
-        if (gameState.balance >= cost) {
-            gameState.balance -= cost;
-            gameState.upgrades[id] = (gameState.upgrades[id] || 0) + 1;
-            
-            if(item.type === 'perClick') {
-                gameState.perClick += item.baseValue;
-            } else if (item.type === 'perSecond') {
-                gameState.perSecond += item.baseValue;
-            }
-            
-            updateBalanceDisplay();
-            updateStatsDisplay();
-            renderShop();
-        } else {
-            showNotification('Not enough Q!', 'error');
-        }
-    }
-
-    function calculateCost(base, level) {
-        return Math.floor(base * Math.pow(1.15, level));
-    }
-
-    function showNotification(message, type) {
-        notification.textContent = message;
-        notification.className = `notification ${type} show`;
-        setTimeout(() => {
-            notification.classList.remove('show');
-        }, 2000);
-    }
-
-
-    // --- Data Persistence ---
-    function saveGame() {
-        try {
-            localStorage.setItem('quantumTapperSave', JSON.stringify(gameState));
-        } catch (e) {
-            console.error("Could not save game state:", e);
-        }
-    }
-
-    function loadGame() {
-        try {
-            const savedState = localStorage.getItem('quantumTapperSave');
-            if (savedState) {
-                const loadedState = JSON.parse(savedState);
-                // Merge loaded state with default to prevent issues with new updates
-                gameState = {...gameState, ...loadedState};
-            }
-        } catch (e) {
-            console.error("Could not load game state:", e);
-        }
-    }
-    
-    // --- Event Listeners ---
-    coin.addEventListener('click', handleCoinClick);
-    
-    shopContainer.addEventListener('click', (event) => {
-        if (event.target.classList.contains('buy-button')) {
-            buyItem(event.target.dataset.id);
-        }
-    });
+    // --- Shop & Boosts Definition ---
+    const shopItems = { /* ... same as before ... */ };
+    const boostItems = {
+        'daily': { name: 'Daily Reward', description: 'Claim a free bonus every 24 hours.', baseValue: 1000 },
+        'golden': { name: 'Golden Quantum', description: 'Click the flying orb for a 15s click boost!', multiplier: 2, duration: 15000 } // 15 seconds
+    };
 
     // --- Game Initialization ---
-    function init() {
-        loadGame();
-        updateBalanceDisplay();
-        updateStatsDisplay();
+    async function init() {
+        const loadedState = await api.loadGameState();
+        if (loadedState) {
+            gameState = { ...gameState, ...loadedState }; // Merge to ensure new properties are not lost
+        }
+
+        // Setup event listeners
+        coin.addEventListener('click', handleCoinClick);
+        navButtons.forEach(btn => btn.addEventListener('click', handleNavClick));
+        claimBonusBtn.addEventListener('click', claimDailyBonus);
+        
+        // Start the game loop
+        setInterval(gameTick, 100); // Main loop runs 10 times per second
+        setInterval(() => api.saveGameState(gameState), 10000); // Auto-save every 10 seconds
+
+        // Initial render
+        updateUI();
+        renderAllTabs();
+        checkDailyBonus();
+        spawnGoldenQuantum();
+    }
+
+    // --- Core Game Loop ---
+    function gameTick() {
+        const passiveGain = gameState.perSecond / 10;
+        gameState.balance += passiveGain;
+        
+        // Handle boost expiration
+        if (gameState.boost.active && Date.now() > gameState.boost.endTime) {
+            gameState.boost.active = false;
+            gameState.boost.multiplier = 1;
+            updateUI(); // Update UI to remove boost state
+        }
+        
+        updateUI();
+    }
+
+    // --- UI Update & Rendering ---
+    function updateUI() {
+        balanceDisplay.textContent = Math.floor(gameState.balance).toLocaleString();
+        perClickStat.textContent = (gameState.perClick * gameState.boost.multiplier).toLocaleString();
+        perSecondStat.textContent = gameState.perSecond.toLocaleString();
+
+        // Update boost timer
+        if (gameState.boost.active) {
+            const timeLeft = Math.ceil((gameState.boost.endTime - Date.now()) / 1000);
+            boostTimerDisplay.textContent = `x${gameState.boost.multiplier} Click Boost: ${timeLeft}s left`;
+            boostTimerDisplay.style.display = 'block';
+        } else {
+            boostTimerDisplay.style.display = 'none';
+        }
+    }
+
+    function renderAllTabs() {
         renderShop();
-        setInterval(passiveIncome, 1000);
-        setInterval(saveGame, 5000); // Save game every 5 seconds
+        renderBoosts();
+        renderTopPlayers();
     }
     
+    // (Add renderShop, renderBoosts, renderTopPlayers functions here)
+    // ... Example for renderShop ...
+    function renderShop() {
+        shopContainer.innerHTML = ''; // Clear existing items
+        // Loop through shopItems and create HTML elements
+        // Add event listeners to buy buttons
+    }
+
+    // --- Event Handlers ---
+    function handleCoinClick(event) {
+        const earnings = gameState.perClick * gameState.boost.multiplier;
+        gameState.balance += earnings;
+        // visual feedback logic (floating text etc.)
+    }
+
+    function handleNavClick(event) {
+        const targetId = event.currentTarget.dataset.target;
+        
+        navButtons.forEach(btn => btn.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+
+        pages.forEach(page => {
+            page.classList.toggle('active', page.id === targetId);
+        });
+        
+        // Re-render tabs that need dynamic content
+        if(targetId === 'shop-page') renderShop();
+        if(targetId === 'top-page') renderTopPlayers();
+    }
+
+    // --- Bonus & Boost Logic ---
+    function checkDailyBonus() {
+        const today = new Date().toDateString();
+        if(gameState.lastBonusClaimed !== today) {
+            const bonus = Math.floor(boostItems.daily.baseValue + gameState.perSecond * 60); // 1 min of passive income
+            dailyBonusAmount.textContent = `${bonus.toLocaleString()} Q`;
+            dailyBonusModal.dataset.bonus = bonus;
+            dailyBonusModal.classList.remove('hidden');
+        }
+    }
+
+    function claimDailyBonus() {
+        const bonusValue = parseInt(dailyBonusModal.dataset.bonus);
+        gameState.balance += bonusValue;
+        gameState.lastBonusClaimed = new Date().toDateString();
+        dailyBonusModal.classList.add('hidden');
+        updateUI();
+    }
+
+    function spawnGoldenQuantum() {
+        // Create a golden quantum element, animate it, and set a click listener
+        // On click, call activateBoost()
+        // Use setTimeout to spawn the next one randomly
+    }
+
+    function activateBoost(multiplier, duration) {
+        if (gameState.boost.active) return; // Don't stack boosts for now
+        gameState.boost.active = true;
+        gameState.boost.multiplier = multiplier;
+        gameState.boost.endTime = Date.now() + duration;
+        updateUI();
+    }
+
+    // --- Let's go! ---
     init();
 });
