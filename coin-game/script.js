@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- DOM Elements ---
+    const gameContainer = document.getElementById('game-container');
     const balanceDisplay = document.getElementById('balance-display');
     const perClickStat = document.getElementById('per-click-stat');
     const perSecondStat = document.getElementById('per-second-stat');
@@ -34,82 +35,83 @@ document.addEventListener('DOMContentLoaded', () => {
     // ======================================================================
     const api = {
         async saveGameState(state) {
-            // TODO: Replace this with a fetch() call to your backend API
-            // For example: await fetch('/api/save', { method: 'POST', body: JSON.stringify(state) });
             console.log("Saving state to Local Storage:", state);
             localStorage.setItem('quantumTapperState', JSON.stringify(state));
         },
         async loadGameState() {
-            // TODO: Replace this with a fetch() call to your backend API
-            // For example: const response = await fetch('/api/load'); return await response.json();
             console.log("Loading state from Local Storage.");
             const savedState = localStorage.getItem('quantumTapperState');
             return savedState ? JSON.parse(savedState) : null;
         },
         async getTopPlayers() {
-            // TODO: Replace this with a fetch() call to your backend API
             console.log("Loading MOCK top players list.");
-            return [
-                { rank: 1, name: 'QuantumLeaper', score: 1.25e9 },
-                { rank: 2, name: 'ByteSmasher', score: 9.87e8 },
-                { rank: 3, name: 'ClickWizard', score: 5.43e8 },
-                { rank: 4, name: 'You!', score: gameState.balance }
-            ].sort((a,b) => b.score - a.score);
+            // In a real app, this would fetch from a server.
+            // We add the current player's score to the list for context.
+            let top = [
+                { rank: 1, name: 'QuantumLeaper', score: 1250000000 },
+                { rank: 2, name: 'ByteSmasher', score: 987000000 },
+                { rank: 3, name: 'ClickWizard', score: 543000000 },
+                { rank: 4, name: 'NanoNibbler', score: 123000000 },
+                { rank: 5, name: 'You', score: gameState.balance }
+            ];
+            return top.sort((a,b) => b.score - a.score).map((player, index) => ({...player, rank: index + 1}));
         }
     };
 
     // --- Shop & Boosts Definition ---
-    const shopItems = { /* ... same as before ... */ };
+    const shopItems = {
+        'click_power_1': { name: 'Quantum Tap', description: '+1 per click', baseCost: 10, value: 1, type: 'perClick', icon: 'fa-hand-pointer' },
+        'auto_miner_1': { name: 'Neutrino Collector', description: '+1 per second', baseCost: 50, value: 1, type: 'perSecond', icon: 'fa-atom' },
+        'click_power_2': { name: 'Boson Amplifier', description: '+10 per click', baseCost: 500, value: 10, type: 'perClick', icon: 'fa-bolt' },
+        'auto_miner_2': { name: 'Dark Matter Harvester', description: '+5 per second', baseCost: 1000, value: 5, type: 'perSecond', icon: 'fa-satellite-dish' },
+        'click_power_3': { name: 'Singularity Tap', description: '+100 per click', baseCost: 10000, value: 100, type: 'perClick', icon: 'fa-compress-arrows-alt' },
+        'auto_miner_3': { name: 'Galaxy Grid', description: '+50 per second', baseCost: 25000, value: 50, type: 'perSecond', icon: 'fa-dungeon' }
+    };
+
     const boostItems = {
-        'daily': { name: 'Daily Reward', description: 'Claim a free bonus every 24 hours.', baseValue: 1000 },
-        'golden': { name: 'Golden Quantum', description: 'Click the flying orb for a 15s click boost!', multiplier: 2, duration: 15000 } // 15 seconds
+        'daily': { name: 'Daily Reward', description: 'Claim a free bonus every 24 hours.', icon: 'fa-calendar-day' },
+        'golden': { name: 'Golden Quantum', description: 'Click the flying orb for a 15s x2 click boost!', icon: 'fa-star' }
     };
 
     // --- Game Initialization ---
     async function init() {
         const loadedState = await api.loadGameState();
         if (loadedState) {
-            gameState = { ...gameState, ...loadedState }; // Merge to ensure new properties are not lost
+            // Merging ensures that if we add new properties to the default state, old saves don't break the game.
+            gameState = { ...gameState, ...loadedState, boost: gameState.boost }; // Don't persist boosts
         }
 
-        // Setup event listeners
         coin.addEventListener('click', handleCoinClick);
         navButtons.forEach(btn => btn.addEventListener('click', handleNavClick));
         claimBonusBtn.addEventListener('click', claimDailyBonus);
         
-        // Start the game loop
-        setInterval(gameTick, 100); // Main loop runs 10 times per second
-        setInterval(() => api.saveGameState(gameState), 10000); // Auto-save every 10 seconds
+        setInterval(gameTick, 100);
+        setInterval(() => api.saveGameState(gameState), 10000);
 
-        // Initial render
-        updateUI();
         renderAllTabs();
         checkDailyBonus();
-        spawnGoldenQuantum();
+        // Start spawning the golden quantum after a delay
+        setTimeout(spawnGoldenQuantum, 15000 + Math.random() * 15000);
     }
 
     // --- Core Game Loop ---
     function gameTick() {
-        const passiveGain = gameState.perSecond / 10;
-        gameState.balance += passiveGain;
+        gameState.balance += gameState.perSecond / 10;
         
-        // Handle boost expiration
         if (gameState.boost.active && Date.now() > gameState.boost.endTime) {
             gameState.boost.active = false;
             gameState.boost.multiplier = 1;
-            updateUI(); // Update UI to remove boost state
         }
         
-        updateUI();
+        updateUIDisplays();
     }
 
     // --- UI Update & Rendering ---
-    function updateUI() {
+    function updateUIDisplays() {
         balanceDisplay.textContent = Math.floor(gameState.balance).toLocaleString();
         perClickStat.textContent = (gameState.perClick * gameState.boost.multiplier).toLocaleString();
         perSecondStat.textContent = gameState.perSecond.toLocaleString();
 
-        // Update boost timer
         if (gameState.boost.active) {
             const timeLeft = Math.ceil((gameState.boost.endTime - Date.now()) / 1000);
             boostTimerDisplay.textContent = `x${gameState.boost.multiplier} Click Boost: ${timeLeft}s left`;
@@ -124,42 +126,127 @@ document.addEventListener('DOMContentLoaded', () => {
         renderBoosts();
         renderTopPlayers();
     }
-    
-    // (Add renderShop, renderBoosts, renderTopPlayers functions here)
-    // ... Example for renderShop ...
+
     function renderShop() {
-        shopContainer.innerHTML = ''; // Clear existing items
-        // Loop through shopItems and create HTML elements
-        // Add event listeners to buy buttons
+        shopContainer.innerHTML = '';
+        for (const id in shopItems) {
+            const item = shopItems[id];
+            const level = gameState.upgrades[id] || 0;
+            const cost = calculateCost(item.baseCost, level);
+            
+            const itemElement = document.createElement('div');
+            itemElement.className = 'list-item';
+            itemElement.innerHTML = `
+                <div class="icon"><i class="fas ${item.icon}"></i></div>
+                <div class="info">
+                    <h3>${item.name}</h3>
+                    <p>${item.description} (Level: ${level})</p>
+                </div>
+                <button class="btn-primary buy-button" data-id="${id}">
+                    ${cost.toLocaleString()} Q
+                </button>
+            `;
+            shopContainer.appendChild(itemElement);
+        }
+        updateShopButtons(); // Set initial button states
+    }
+
+    function renderBoosts() {
+        boostsContainer.innerHTML = '';
+        for (const id in boostItems) {
+            const boost = boostItems[id];
+            const boostElement = document.createElement('div');
+            boostElement.className = 'list-item';
+            boostElement.innerHTML = `
+                <div class="icon"><i class="fas ${boost.icon}"></i></div>
+                <div class="info">
+                    <h3>${boost.name}</h3>
+                    <p>${boost.description}</p>
+                </div>
+            `;
+            boostsContainer.appendChild(boostElement);
+        }
+    }
+
+    async function renderTopPlayers() {
+        topPlayersContainer.innerHTML = `<p>Loading...</p>`;
+        const players = await api.getTopPlayers();
+        topPlayersContainer.innerHTML = '';
+        players.forEach(player => {
+            const playerElement = document.createElement('div');
+            playerElement.className = 'list-item';
+            playerElement.innerHTML = `
+                <div class="icon">#${player.rank}</div>
+                <div class="info">
+                    <h3>${player.name}</h3>
+                    <p>${Math.floor(player.score).toLocaleString()} Q</p>
+                </div>
+            `;
+            if (player.name === 'You') {
+                playerElement.style.border = '2px solid var(--primary-color)';
+            }
+            topPlayersContainer.appendChild(playerElement);
+        });
+    }
+
+    function updateShopButtons() {
+        const buttons = shopContainer.querySelectorAll('.buy-button');
+        buttons.forEach(button => {
+            const id = button.dataset.id;
+            const level = gameState.upgrades[id] || 0;
+            const cost = calculateCost(shopItems[id].baseCost, level);
+            button.disabled = gameState.balance < cost;
+        });
     }
 
     // --- Event Handlers ---
     function handleCoinClick(event) {
         const earnings = gameState.perClick * gameState.boost.multiplier;
         gameState.balance += earnings;
-        // visual feedback logic (floating text etc.)
+        createFloatingText(event, `+${earnings.toLocaleString()}`);
     }
 
     function handleNavClick(event) {
         const targetId = event.currentTarget.dataset.target;
-        
         navButtons.forEach(btn => btn.classList.remove('active'));
         event.currentTarget.classList.add('active');
-
-        pages.forEach(page => {
-            page.classList.toggle('active', page.id === targetId);
-        });
+        pages.forEach(page => page.classList.toggle('active', page.id === targetId));
         
-        // Re-render tabs that need dynamic content
-        if(targetId === 'shop-page') renderShop();
-        if(targetId === 'top-page') renderTopPlayers();
+        if (targetId === 'shop-page') renderShop();
+        if (targetId === 'top-page') renderTopPlayers();
+    }
+
+    shopContainer.addEventListener('click', (event) => {
+        if (event.target.classList.contains('buy-button')) {
+            buyItem(event.target.dataset.id);
+        }
+    });
+
+    function buyItem(id) {
+        const item = shopItems[id];
+        const level = gameState.upgrades[id] || 0;
+        const cost = calculateCost(item.baseCost, level);
+
+        if (gameState.balance >= cost) {
+            gameState.balance -= cost;
+            gameState.upgrades[id] = level + 1;
+            
+            if (item.type === 'perClick') gameState.perClick += item.value;
+            if (item.type === 'perSecond') gameState.perSecond += item.value;
+            
+            renderShop(); // Re-render the shop to update costs and levels
+        }
+    }
+    
+    function calculateCost(base, level) {
+        return Math.floor(base * Math.pow(1.18, level));
     }
 
     // --- Bonus & Boost Logic ---
     function checkDailyBonus() {
         const today = new Date().toDateString();
         if(gameState.lastBonusClaimed !== today) {
-            const bonus = Math.floor(boostItems.daily.baseValue + gameState.perSecond * 60); // 1 min of passive income
+            const bonus = Math.floor(boostItems.daily.baseValue + gameState.perSecond * 120); // 2 mins of passive income
             dailyBonusAmount.textContent = `${bonus.toLocaleString()} Q`;
             dailyBonusModal.dataset.bonus = bonus;
             dailyBonusModal.classList.remove('hidden');
@@ -171,22 +258,78 @@ document.addEventListener('DOMContentLoaded', () => {
         gameState.balance += bonusValue;
         gameState.lastBonusClaimed = new Date().toDateString();
         dailyBonusModal.classList.add('hidden');
-        updateUI();
     }
 
     function spawnGoldenQuantum() {
-        // Create a golden quantum element, animate it, and set a click listener
-        // On click, call activateBoost()
-        // Use setTimeout to spawn the next one randomly
+        const golden = document.createElement('div');
+        golden.className = 'golden-quantum';
+        golden.innerHTML = `<i class="fas fa-star"></i>`;
+
+        // Random start and end points
+        const startX = Math.random() > 0.5 ? -50 : gameContainer.clientWidth + 50;
+        const startY = Math.random() * gameContainer.clientHeight;
+        const endX = gameContainer.clientWidth - startX;
+        const endY = Math.random() * gameContainer.clientHeight;
+
+        golden.style.left = `${startX}px`;
+        golden.style.top = `${startY}px`;
+
+        gameContainer.appendChild(golden);
+        
+        // Use requestAnimationFrame for smooth animation
+        setTimeout(() => {
+            golden.style.transition = 'transform 5s linear';
+            golden.style.transform = `translate(${endX - startX}px, ${endY - startY}px)`;
+        }, 100);
+
+        golden.addEventListener('click', () => {
+            activateBoost(2, 15000); // 2x multiplier for 15 seconds
+            golden.remove();
+        }, { once: true });
+
+        setTimeout(() => golden.remove(), 5100); // Clean up if not clicked
+        setTimeout(spawnGoldenQuantum, 30000 + Math.random() * 30000); // Spawn next one in 30-60 seconds
     }
 
     function activateBoost(multiplier, duration) {
-        if (gameState.boost.active) return; // Don't stack boosts for now
+        if (gameState.boost.active) return;
         gameState.boost.active = true;
         gameState.boost.multiplier = multiplier;
         gameState.boost.endTime = Date.now() + duration;
-        updateUI();
     }
+
+    function createFloatingText(event, text) {
+        const el = document.createElement('div');
+        el.textContent = text;
+        el.className = 'floating-text'; // You need to style this class in CSS
+        el.style.left = `${event.clientX}px`;
+        el.style.top = `${event.clientY}px`;
+        document.body.appendChild(el);
+        el.addEventListener('animationend', () => el.remove());
+    }
+    // Add CSS for .floating-text (copied from a previous response for completeness)
+    const styleSheet = document.createElement("style");
+    styleSheet.type = "text/css";
+    styleSheet.innerText = `
+        .floating-text {
+            position: fixed;
+            font-size: 1.5em;
+            font-weight: 600;
+            color: var(--primary-color);
+            pointer-events: none;
+            animation: float-up 1.5s ease-out forwards;
+            text-shadow: 0 0 5px white;
+            z-index: 9999;
+        }
+        @keyframes float-up {
+            to {
+                transform: translateY(-150px);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(styleSheet);
+
 
     // --- Let's go! ---
     init();
