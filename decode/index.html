@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Data Decoder</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container">
+        <header class="main-header">
+            <h1>Data Decoder</h1>
+            <p>Instantly decode and parse structured data strings.</p>
+        </header>
+
+        <main class="decoder-interface">
+            <div class="input-section">
+                <div class="input-header">
+                    <label for="input-text">Encoded Input</label>
+                    <div class="encoding-selector">
+                        <select id="encoding-type">
+                            <option value="base64">Base64</option>
+                            <option value="url">URL Encoding</option>
+                        </select>
+                    </div>
+                </div>
+                <textarea id="input-text" placeholder="Paste your encoded string here..."></textarea>
+            </div>
+
+            <div class="output-section">
+                <div class="output-header">
+                    <h3>Decoded Output</h3>
+                </div>
+                <div class="table-container">
+                    <table id="output-table">
+                        <thead>
+                            <tr>
+                                <th>Key</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Decoded data will be injected here by JavaScript -->
+                            <tr>
+                                <td colspan="2" class="placeholder">Your decoded data will appear here.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <footer class="main-footer">
+            <p>© 2025 Advanced Decoder. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
