@@ -22,13 +22,13 @@
         </header>
 
         <nav class="tool-tabs">
-            <button class="tab-link active" data-tool="decoder">2D Data Decoder</button>
-            <button class="tab-link" data-tool="parser">DSV Parser & Extractor</button>
+            <button class="tab-link" data-tool="decoder">2D Data Decoder</button>
+            <button class="tab-link active" data-tool="parser">DSV Parser & Extractor</button>
         </nav>
 
         <main class="tool-content-area">
-            <!-- Tool 1: 2D Data Decoder (Updated) -->
-            <div id="decoder" class="tool-content active">
+            <!-- Tool 1: 2D Data Decoder (Unchanged) -->
+            <div id="decoder" class="tool-content">
                 <div class="interface-panel input-panel">
                     <div class="panel-header">
                         <label for="decoder-input">Encoded Input (Rows by <::>, Columns by ;)</label>
@@ -48,22 +48,22 @@
                         <h3>Decoded Table</h3>
                         <button class="copy-btn" data-target-table="decoder-output-container">Copy</button>
                     </div>
-                    <div class="table-container" id="decoder-output-container">
-                        <!-- Decoder table will be injected here -->
-                    </div>
+                    <div class="table-container" id="decoder-output-container"></div>
                 </div>
             </div>
 
-            <!-- Tool 2: DSV Parser (Unchanged) -->
-            <div id="parser" class="tool-content">
+            <!-- Tool 2: DSV Parser (Updated) -->
+            <div id="parser" class="tool-content active">
                 <div class="interface-panel input-panel">
                     <div class="panel-header">
-                        <label for="parser-input">Raw Data (Rows: new lines, Columns: ;)</label>
+                        <label for="parser-input">Raw Data (First row is header; Columns by ;)</label>
                     </div>
-                    <textarea id="parser-input" placeholder="Paste your raw data here..."></textarea>
+                    <textarea id="parser-input" placeholder="Header1;Header2;Header3...
+ValueA1;ValueA2;ValueA3...
+ValueB1;ValueB2;ValueB3..."></textarea>
                     <div class="prototype-buttons">
                         <span>Try a Prototype:</span>
-                        <button class="prototype-btn" data-target="parser-input">Sample Data</button>
+                        <button class="prototype-btn" data-target="parser-input">Naval Fleet Data</button>
                     </div>
                 </div>
                 <div class="interface-panel output-panel">
@@ -71,9 +71,7 @@
                         <h3>Parsed Table & Statistics</h3>
                          <button class="copy-btn" data-target-table="parser-output-container">Copy</button>
                     </div>
-                    <div class="table-container" id="parser-output-container">
-                         <!-- Parser table will be injected here -->
-                    </div>
+                    <div class="table-container" id="parser-output-container"></div>
                 </div>
             </div>
         </main>
