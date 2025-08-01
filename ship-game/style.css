@@ -1,164 +1,76 @@
+/* --- GLOBAL & FONT SETUP --- */
 :root {
-    --grid-size: 10;
-    --cell-size: 40px;
-    --grid-bg: #2c3e50;
-    --water-color: #3498db;
-    --ship-color: #bdc3c7;
-    --ship-border: #7f8c8d;
-    --hit-color: #e74c3c;
-    --miss-color: #95a5a6;
-    --font-color: #ecf0f1;
+    --grid-size: 12;
+    --cell-size: 35px;
+    --bg-color: #020a17;
+    --panel-bg: rgba(18, 29, 51, 0.5);
+    --water-color: rgba(10, 25, 47, 0.7);
+    --accent-color: #00d9ff;
+    --glow-color: rgba(0, 217, 255, 0.5);
+    --hit-color: #ff4757;
+    --miss-color: #708090;
+    --font-primary: 'Poppins', sans-serif;
+    --font-display: 'Orbitron', sans-serif;
 }
+* { box-sizing: border-box; }
+body { font-family: var(--font-primary); background-color: var(--bg-color); color: #f0f8ff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; overflow: hidden; }
+.background-effects { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%); }
 
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: var(--grid-bg);
-    color: var(--font-color);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    margin: 0;
-}
+/* --- LOGIN PAGE --- */
+.login-container { text-align: center; }
+.login-box { background: var(--panel-bg); padding: 2.5rem; border-radius: 15px; backdrop-filter: blur(10px); border: 1px solid rgba(0, 217, 255, 0.2); animation: float-in 1s ease-out; }
+@keyframes float-in { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+.login-box h1 { font-family: var(--font-display); letter-spacing: 2px; }
+#login-form input { display: block; width: 280px; padding: 12px; margin: 1rem auto; border-radius: 5px; border: 1px solid rgba(0, 217, 255, 0.3); background: rgba(0,0,0,0.3); color: white; font-size: 1rem; }
+.cta-button { font-family: var(--font-display); width: 100%; padding: 12px; background: var(--accent-color); color: black; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 15px var(--glow-color); }
+.cta-button:hover { transform: translateY(-2px); box-shadow: 0 0 25px var(--glow-color); }
+.cta-button.secondary { background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); box-shadow: none; }
 
-.game-container {
-    text-align: center;
-}
+/* --- GAME UI & HEADER --- */
+.game-container { width: 95vw; max-width: 1400px; padding: 1rem; animation: float-in 1s ease-out; }
+.game-header { display: flex; justify-content: space-between; align-items: stretch; margin-bottom: 1rem; gap: 1rem; }
+.game-panel { background: var(--panel-bg); backdrop-filter: blur(8px); border: 1px solid rgba(0, 217, 255, 0.2); border-radius: 10px; padding: 1rem; }
+.player-info { flex-basis: 25%; text-align: center; }
+.player-info h2 { margin: 0 0 0.5rem 0; font-family: var(--font-display); font-size: 1.2rem; }
+.player-balance { color: #bdc3c7; }
+.match-info { text-align: center; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
+#game-status { font-size: 1.2rem; height: 30px; font-weight: 600; transition: color 0.3s; }
+#match-id { font-family: monospace; color: #708090; }
 
-.game-header h1 {
-    font-weight: 300;
-    font-size: 3rem;
-}
+/* --- GRIDS & ISOMETRIC VIEW --- */
+.game-boards { display: flex; justify-content: space-around; gap: 4rem; margin-top: 1rem; }
+.grid-container { transition: box-shadow 0.3s; padding: 1rem; border: 1px solid transparent; border-radius: 10px; }
+.grid-container.active { border-color: var(--accent-color); box-shadow: 0 0 25px var(--glow-color); }
+.grid-label { text-align: center; font-family: var(--font-display); margin-bottom: 2rem; }
+.isometric-wrapper { perspective: 1500px; }
+.grid { display: grid; grid-template-columns: repeat(var(--grid-size), var(--cell-size)); background-color: var(--water-color); position: relative; transform: rotateX(60deg) rotateZ(45deg); transform-style: preserve-3d; border-image: linear-gradient(to bottom right, var(--accent-color), #2c5364) 1; }
+.cell { width: var(--cell-size); height: var(--cell-size); border: 1px solid rgba(0, 217, 255, 0.1); box-sizing: border-box; position: relative; }
+.grid:not(.placement-mode) #opponent-grid .cell:not(.locked):hover { background: var(--glow-color); cursor: crosshair; }
+.placement-mode #player-grid .cell:hover { background: var(--glow-color); cursor: pointer; }
 
-#game-status {
-    font-size: 1.2rem;
-    height: 30px;
-    margin: 1rem 0;
-}
+/* --- HOLOGRAPHIC SHIP STYLES --- */
+.ship-preview, .ship { position: absolute; background: linear-gradient(160deg, rgba(0, 217, 255, 0.5), rgba(0, 217, 255, 0.2)); border: 1px solid var(--accent-color); box-sizing: border-box; transform-origin: top left; box-shadow: 0 0 10px var(--glow-color); animation: pulse 2s infinite ease-in-out; pointer-events: none; }
+@keyframes pulse { 50% { box-shadow: 0 0 20px var(--glow-color); } }
+.ship.sunk { animation: none; opacity: 0.3; background: #555; border-color: #333; box-shadow: none; }
+.carrier { width: calc(var(--cell-size) * 5); height: var(--cell-size); } .battleship { width: calc(var(--cell-size) * 4); height: var(--cell-size); } .cruiser, .submarine { width: calc(var(--cell-size) * 3); height: var(--cell-size); } .destroyer { width: calc(var(--cell-size) * 2); height: var(--cell-size); }
+.ship.vertical, .ship-preview.vertical { transform: rotate(90deg) translateY(calc(var(--cell-size) * -1)); }
 
-#start-game-btn {
-    padding: 10px 20px;
-    font-size: 1rem;
-    background-color: #e67e22;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
+/* --- ANIMATIONS & EFFECTS --- */
+.marker { position: absolute; top: 50%; left: 50%; border-radius: 50%; width: 50%; height: 50%; transform: translate(-50%, -50%); animation: marker-pop 0.3s ease-out; }
+@keyframes marker-pop { from { transform: translate(-50%, -50%) scale(0); } to { transform: translate(-50%, -50%) scale(1); } }
+.marker.hit { background: radial-gradient(circle, #ffc93c, var(--hit-color)); box-shadow: 0 0 10px var(--hit-color); }
+.marker.miss { background: radial-gradient(circle, #fff, var(--miss-color)); }
+.projectile { position: fixed; width: 5px; height: 50px; background: linear-gradient(var(--accent-color), transparent); z-index: 1000; pointer-events: none; transform-origin: top center; transition: all 0.5s cubic-bezier(0.55, 0, 1, 0.45); }
 
-#start-game-btn:disabled {
-    background-color: #95a5a6;
-    cursor: not-allowed;
-}
-
-.game-boards {
-    display: flex;
-    gap: 4rem;
-    margin-top: 2rem;
-}
-
-.grid-container h2 {
-    font-weight: 300;
-    margin-bottom: 2rem;
-}
-
-.isometric-wrapper {
-    perspective: 1000px;
-}
-
-.grid {
-    display: grid;
-    grid-template-columns: repeat(var(--grid-size), var(--cell-size));
-    grid-template-rows: repeat(var(--grid-size), var(--cell-size));
-    width: calc(var(--grid-size) * var(--cell-size));
-    height: calc(var(--grid-size) * var(--cell-size));
-    background-color: var(--water-color);
-    border: 2px solid #2980b9;
-    position: relative;
-    transform: rotateX(60deg) rotateZ(45deg);
-    transform-style: preserve-3d;
-    box-shadow: 10px 10px 20px rgba(0,0,0,0.4);
-}
-
-.cell {
-    width: var(--cell-size);
-    height: var(--cell-size);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-sizing: border-box;
-    position: relative;
-}
-
-#opponent-grid .cell:hover {
-    background-color: rgba(255, 255, 255, 0.3);
-    cursor: crosshair;
-}
-
-/* --- State Markers (Hits & Misses) --- */
-.marker {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    border-radius: 50%;
-    width: 50%;
-    height: 50%;
-}
-.marker.hit { background-color: var(--hit-color); box-shadow: 0 0 10px var(--hit-color); }
-.marker.miss { background-color: var(--miss-color); }
-
-/* --- Pen-Drawn Ship Styles --- */
-.ship {
-    position: absolute;
-    background-color: var(--ship-color);
-    border: 2px solid var(--ship-border);
-    box-sizing: border-box;
-    border-radius: 4px;
-    transform-origin: top left;
-    box-shadow: 5px 5px 5px rgba(0,0,0,0.3);
-    pointer-events: none; /* Ships don't intercept clicks */
-}
-
-/* Base ship types */
-.carrier { width: calc(var(--cell-size) * 5); height: var(--cell-size); }
-.battleship { width: calc(var(--cell-size) * 4); height: var(--cell-size); }
-.cruiser, .submarine { width: calc(var(--cell-size) * 3); height: var(--cell-size); }
-.destroyer { width: calc(var(--cell-size) * 2); height: var(--cell-size); }
-
-/* Vertical orientation */
-.ship.vertical {
-    transform: rotate(90deg) translateY(calc(var(--cell-size) * -1));
-}
-
-/* Ship details using pseudo-elements */
-.carrier::before { /* Flight deck line */
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 10%;
-    right: 10%;
-    height: 2px;
-    background: var(--ship-border);
-    transform: translateY(-50%);
-}
-.battleship::before, .cruiser::before { /* Superstructure/Bridge */
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 20%;
-    height: 60%;
-    background: var(--ship-border);
-    transform: translate(-50%, -50%);
-    border-radius: 2px;
-}
-.submarine.horizontal::before {
-    content: '';
-    position: absolute;
-    top: -4px;
-    left: 45%;
-    width: 10%;
-    height: 10px;
-    background: var(--ship-border);
-    border-radius: 2px;
-}
+/* --- MODALS & CONTROLS --- */
+.game-controls { text-align: center; margin-top: 1.5rem; }
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 1000; animation: fade-in 0.3s; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.modal-overlay.visible { display: flex; }
+.modal-content { animation: float-in 0.5s; position: relative; padding: 2rem; min-width: 400px; max-width: 80%; }
+.modal-content.wide { min-width: 600px; }
+.modal-close-btn { position: absolute; top: 10px; right: 15px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+#history-list, #store-items { max-height: 60vh; overflow-y: auto; text-align: left; margin-top: 1rem; }
+.history-item, .store-item { display: flex; justify-content: space-between; padding: 1rem; border-bottom: 1px solid rgba(0, 217, 255, 0.2); align-items: center; }
+.history-item .result-Victory { color: #2ecc71; }
+.history-item .result-Defeat { color: var(--hit-color); }
