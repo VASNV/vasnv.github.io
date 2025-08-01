@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stellar Combat - Login</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background-effects"></div>
+    <div class="login-container">
+        <div class="login-box">
+            <h1>Stellar Combat</h1>
+            <p>Connect to the Fleet Command Network.</p>
+            <form id="login-form">
+                <input type="text" placeholder="Callsign (e.g., Captain_Alex)" value="Captain_Alex" required>
+                <input type="password" placeholder="Password" value="password" required>
+                <button type="submit" class="cta-button">Engage</button>
+            </form>
+        </div>
+    </div>
+    <script>
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            // In a real app, you would call an ApiService here.
+            localStorage.setItem('loggedInUser', e.target.querySelector('input[type="text"]').value);
+            window.location.href = 'index.html';
+        });
+    </script>
+</body>
+</html>
