@@ -1,7 +1,7 @@
 // --- GLOBAL APP NAMESPACE & CONFIG ---
 const App = {
     config: {
-        GRID_SIZE: 12,
+        GRID_SIZE: 14,
         FLEET_TEMPLATE: [
             { name: 'carrier', length: 5 },
             { name: 'battleship', length: 4 },
@@ -17,7 +17,6 @@ App.UI = {
     init() {
         this.cacheDOM();
         this.bindEvents();
-        this.setupGridLabels();
     },
     cacheDOM() {
         this.playerGrid = document.getElementById('player-grid');
@@ -32,7 +31,6 @@ App.UI = {
         this.gameOverModal = document.getElementById('game-over-modal');
         this.matchHistoryModal = document.getElementById('match-history-modal');
         this.storeModal = document.getElementById('store-modal');
-        this.deployBtn = document.getElementById('deploy-btn');
     },
     bindEvents() {
         this.playerGrid.addEventListener('click', e => App.GameController.onPlayerGridClick(e.target));
@@ -40,22 +38,11 @@ App.UI = {
         this.playerGrid.addEventListener('mouseout', () => App.GameController.onPlayerGridMouseOut());
         this.playerGrid.addEventListener('contextmenu', e => { e.preventDefault(); App.GameController.onPlacementRotate(); });
         this.opponentGrid.addEventListener('click', e => App.GameController.onOpponentGridClick(e.target));
-        this.deployBtn.addEventListener('click', () => App.GameController.enterBattleState());
         document.getElementById('play-again-btn').addEventListener('click', () => App.GameController.start());
         document.getElementById('view-history-btn').addEventListener('click', () => this.showModal('match-history-modal', true));
         document.getElementById('history-btn').addEventListener('click', () => this.showModal('match-history-modal', true));
         document.getElementById('store-btn').addEventListener('click', () => this.showModal('store-modal', true));
         document.querySelectorAll('.modal-close-btn').forEach(btn => btn.addEventListener('click', () => this.showModal(btn.dataset.modal, false)));
-    },
-    setupGridLabels() {
-        const topLabels = document.querySelectorAll('.grid-labels-top');
-        const leftLabels = document.querySelectorAll('.grid-labels-left');
-        let topHTML = '';
-        for (let i = 0; i < App.config.GRID_SIZE; i++) { topHTML += `<span>${String.fromCharCode(65 + i)}</span>`; }
-        let leftHTML = '';
-        for (let i = 1; i <= App.config.GRID_SIZE; i++) { leftHTML += `<span>${i}</span>`; }
-        topLabels.forEach(el => el.innerHTML = topHTML);
-        leftLabels.forEach(el => el.innerHTML = leftHTML);
     },
     drawGrid(element) {
         element.innerHTML = '';
@@ -78,35 +65,11 @@ App.UI = {
         gridEl.appendChild(shipEl);
         return shipEl;
     },
-    async animateProjectile(fromGrid, toGrid, toX, toY) {
-        const projectile = document.createElement('div');
-        projectile.className = 'projectile';
-        document.body.appendChild(projectile);
-        const startRect = fromGrid.getBoundingClientRect();
-        const endCell = toGrid.querySelector(`[data-x='${toX}'][data-y='${toY}']`);
-        const endRect = endCell.getBoundingClientRect();
-        const startX = startRect.left + startRect.width / 2;
-        const startY = startRect.top + startRect.height / 2;
-        const endX = endRect.left + endRect.width / 2;
-        const endY = endRect.top + endRect.height / 2;
-        const angle = Math.atan2(endY - startY, endX - startX) * 180 / Math.PI + 90;
-        projectile.style.left = `${startX}px`;
-        projectile.style.top = `${startY}px`;
-        projectile.style.transform = `rotate(${angle}deg)`;
-        return new Promise(resolve => {
-            setTimeout(() => {
-                projectile.style.left = `${endX}px`;
-                projectile.style.top = `${endY}px`;
-            }, 50);
-            setTimeout(() => {
-                projectile.remove();
-                resolve();
-            }, 550);
-        });
-    },
     renderShot(gridEl, x, y, result) {
         const cell = gridEl.querySelector(`[data-x='${x}'][data-y='${y}']`);
         cell.classList.add('locked');
+        cell.classList.add('cell-effect-hit');
+        setTimeout(() => cell.classList.remove('cell-effect-hit'), 500);
         const marker = document.createElement('div');
         marker.className = `marker ${result}`;
         cell.appendChild(marker);
@@ -122,10 +85,6 @@ App.UI = {
     },
     updateMatchInfo(id) { this.matchIdEl.textContent = `Match ID: ${id}`; },
     updateStatus(text) { this.statusEl.textContent = text; },
-    toggleActivePlayer(isPlayerTurn) {
-        document.getElementById('player-side').classList.toggle('active', isPlayerTurn);
-        document.getElementById('opponent-side').classList.toggle('active', !isPlayerTurn);
-    },
     showModal(modalId, show) {
         const modal = document.getElementById(modalId);
         if (show) {
@@ -139,11 +98,9 @@ App.UI = {
     renderMatchHistory() {
         const testHistory = [
             { id: 'match_abc123', opponent: 'AI_Cruiser', result: 'Victory' },
-            { id: 'match_def456', opponent: 'AI_Destroyer', result: 'Victory' },
             { id: 'match_ghi789', opponent: 'AI_Admiral', result: 'Defeat' },
         ];
-        const listEl = document.getElementById('history-list');
-        listEl.innerHTML = testHistory.map(item => `
+        document.getElementById('history-list').innerHTML = testHistory.map(item => `
             <div class="history-item">
                 <span>vs ${item.opponent}</span>
                 <span class="result-${item.result}">${item.result}</span>
@@ -155,7 +112,6 @@ App.UI = {
         const testItems = [
             { id: 'skin_01', name: 'Holographic Skin', type: 'ship_skin', price: 500, currency: 'gold' },
             { id: 'skin_02', name: 'Gilded Fleet Skin', type: 'ship_skin', price: 100, currency: 'gems' },
-            { id: 'pack_01', name: '1000 Gold', type: 'currency', price: 50, currency: 'gems' },
         ];
         const itemsEl = document.getElementById('store-items');
         itemsEl.innerHTML = testItems.map(item => `
@@ -167,12 +123,10 @@ App.UI = {
                 </div>
             </div>
         `).join('');
-        // Add event listeners to the new purchase buttons
         itemsEl.querySelectorAll('.store-item button').forEach(button => {
             button.addEventListener('click', (e) => {
                 const itemId = e.target.closest('.store-item').dataset.itemId;
-                alert(`Transaction initiated for item: ${itemId}. (This would call the API).`);
-                console.log(`Purchase initiated for item: ${itemId}`);
+                alert(`Transaction initiated for item: ${itemId}.`);
             });
         });
     },
@@ -222,14 +176,13 @@ App.Models = {
                 this.grid[y][x] = 'miss';
                 return { result: 'miss' };
             }
-            return { result: 'miss' }; // Already hit
+            return { result: 'miss' };
         }
     },
     Player: class {
         constructor(isAI = false) {
             this.grid = new App.Models.Grid();
             this.isAI = isAI;
-            // AI-specific state
             this.aiTargetMode = false;
             this.aiHitQueue = [];
         }
@@ -244,7 +197,6 @@ App.GameController = {
         const username = sessionStorage.getItem('loggedInUser');
         if (!username) { window.location.href = 'login.html'; return; }
         
-        // This replaces ApiService.login
         this.state.currentUser = { username, rating: 1520, gold: 5000, gems: 250 };
         App.UI.updatePlayerInfo(this.state.currentUser);
         this.start();
@@ -254,7 +206,6 @@ App.GameController = {
         this.state.gameState = 'MATCHING';
         App.UI.updateStatus("Searching for an opponent...");
         
-        // This replaces ApiService.findMatch
         setTimeout(() => {
             this.state.match = { id: `match_${Math.random().toString(36).substr(2, 9)}`, opponent: { username: 'AI_Admiral', rating: 1500 } };
             this.state.player = new App.Models.Player();
@@ -270,7 +221,6 @@ App.GameController = {
         App.UI.drawGrid(App.UI.playerGrid);
         App.UI.drawGrid(App.UI.opponentGrid);
         App.UI.playerGrid.classList.add('placement-mode');
-        App.UI.deployBtn.classList.add('hidden');
         this.updatePlacementStatus();
     },
     updatePlacementStatus() {
@@ -291,7 +241,7 @@ App.GameController = {
             
             this.state.placement.fleetIndex++;
             if (this.state.placement.fleetIndex >= App.config.FLEET_TEMPLATE.length) {
-                this.enterDeployState();
+                this.enterBattleState();
             } else {
                 this.updatePlacementStatus();
             }
@@ -324,36 +274,26 @@ App.GameController = {
         this.state.placement.isVertical = !this.state.placement.isVertical;
         this.onPlayerGridMouseOut();
     },
-    enterDeployState() {
-        this.state.gameState = 'DEPLOY';
-        App.UI.updateStatus("Fleet positioned. Ready to engage!");
-        App.UI.deployBtn.classList.remove('hidden');
-        App.UI.playerGrid.classList.remove('placement-mode');
-        this.onPlayerGridMouseOut();
-    },
     enterBattleState() {
         this.state.gameState = 'BATTLE';
-        App.UI.deployBtn.classList.add('hidden');
+        App.UI.playerGrid.classList.remove('placement-mode');
+        this.onPlayerGridMouseOut();
         App.UI.updateStatus("Deploying fleet to combat zone...");
         
-        // This replaces ApiService.placeFleet
         this.state.opponent.grid = new App.Models.Grid();
         const opponentFleetLayout = this.generateAIFleetLayout();
         opponentFleetLayout.forEach(ship => this.state.opponent.grid.addShip(ship));
         
         this.state.isPlayerTurn = true;
-        App.UI.toggleActivePlayer(true);
         App.UI.updateStatus("Battle commencing! Your turn.");
     },
     async onOpponentGridClick(cell) {
         if (this.state.gameState !== 'BATTLE' || !this.state.isPlayerTurn || !cell.classList.contains('cell') || cell.classList.contains('locked')) return;
         
         this.state.isPlayerTurn = false;
-        App.UI.toggleActivePlayer(false);
         const x = parseInt(cell.dataset.x);
         const y = parseInt(cell.dataset.y);
 
-        await App.UI.animateProjectile(App.UI.playerGrid, App.UI.opponentGrid, x, y);
         const result = this.state.opponent.grid.receiveShot(x, y);
         App.UI.renderShot(App.UI.opponentGrid, x, y, result.result);
         
@@ -367,10 +307,9 @@ App.GameController = {
     },
     triggerAITurn() {
         App.UI.updateStatus("Opponent is taking aim...");
-        setTimeout(async () => {
+        setTimeout(() => {
             if (this.state.gameState !== 'BATTLE') return;
             const {x, y} = this.getAIMove();
-            await App.UI.animateProjectile(App.UI.opponentGrid, App.UI.playerGrid, x, y);
             const result = this.state.player.grid.receiveShot(x, y);
             this.updateAIState(x, y, result.result);
             App.UI.renderShot(App.UI.playerGrid, x, y, result.result);
@@ -382,9 +321,7 @@ App.GameController = {
                     this.endGame(false); return;
                 }
             }
-
             this.state.isPlayerTurn = true;
-            App.UI.toggleActivePlayer(true);
             App.UI.updateStatus("Your turn, Captain.");
         }, 1200);
     },
