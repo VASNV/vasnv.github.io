@@ -3,58 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Data Decoder</title>
+    <title>Advanced Data Suite</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Titillium+Web:wght@600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
     <div class="container">
         <header class="main-header">
-            <h1>Data Decoder</h1>
-            <p>Instantly decode and parse structured data strings.</p>
+            <h1>Advanced Data Suite</h1>
+            <p>A modern toolkit to parse, decode, and analyze data instantly.</p>
         </header>
 
-        <main class="decoder-interface">
-            <div class="input-section">
-                <div class="input-header">
-                    <label for="input-text">Encoded Input</label>
-                    <div class="encoding-selector">
-                        <select id="encoding-type">
-                            <option value="base64">Base64</option>
-                            <option value="url">URL Encoding</option>
-                        </select>
+        <nav class="tool-tabs">
+            <button class="tab-link active" data-tool="decoder">Data Decoder</button>
+            <button class="tab-link" data-tool="parser">DSV Parser & Extractor</button>
+        </nav>
+
+        <main class="tool-content-area">
+            <!-- Tool 1: Data Decoder -->
+            <div id="decoder" class="tool-content active">
+                <div class="interface-panel">
+                    <div class="input-section">
+                        <div class="input-header">
+                            <label for="decoder-input">Encoded Input (separated by ;)</label>
+                            <select id="encoding-type">
+                                <option value="base64">Base64</option>
+                                <option value="url">URL Encoding</option>
+                            </select>
+                        </div>
+                        <textarea id="decoder-input" placeholder="Paste your encoded string here..."></textarea>
                     </div>
                 </div>
-                <textarea id="input-text" placeholder="Paste your encoded string here..."></textarea>
+                <div class="interface-panel">
+                    <div class="output-section">
+                        <h3 class="output-header">Decoded Output</h3>
+                        <div class="table-container" id="decoder-output-container">
+                            <!-- Decoder table will be injected here -->
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="output-section">
-                <div class="output-header">
-                    <h3>Decoded Output</h3>
+            <!-- Tool 2: DSV Parser -->
+            <div id="parser" class="tool-content">
+                <div class="interface-panel">
+                    <div class="input-section">
+                        <div class="input-header">
+                            <label for="parser-input">Raw Data (Rows separated by new lines, columns by ;)</label>
+                        </div>
+                        <textarea id="parser-input" placeholder="Paste your raw data here... e.g.\nUser;Email;Website\nJohn Doe;john@example.com;https://example.com\nИван Петров;ivan@site.ru;https://site.ru"></textarea>
+                    </div>
                 </div>
-                <div class="table-container">
-                    <table id="output-table">
-                        <thead>
-                            <tr>
-                                <th>Key</th>
-                                <th>Value</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Decoded data will be injected here by JavaScript -->
-                            <tr>
-                                <td colspan="2" class="placeholder">Your decoded data will appear here.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                 <div class="interface-panel">
+                    <div class="output-section">
+                        <h3 class="output-header">Parsed Table & Statistics</h3>
+                        <div class="table-container" id="parser-output-container">
+                             <!-- Parser table will be injected here -->
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
-
-        <footer class="main-footer">
-            <p>© 2025 Advanced Decoder. All rights reserved.</p>
-        </footer>
     </div>
 
     <script src="script.js"></script>
