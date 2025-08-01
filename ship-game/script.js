@@ -1,51 +1,14 @@
-// --- GLOBAL APP NAMESPACE ---
-const App = {};
-
-// --- CONFIG & CONSTANTS ---
-App.config = {
-    GRID_SIZE: 12,
-    FLEET_TEMPLATE: [
-        { name: 'carrier', length: 5 },
-        { name: 'battleship', length: 4 },
-        { name: 'cruiser', length: 3 },
-        { name: 'submarine', length: 3 },
-        { name: 'destroyer', length: 2 },
-    ]
-};
-
-// --- API SERVICE (BACKEND-READY MOCK) ---
-App.ApiService = {
-    async login(username) {
-        console.log(`API: Logging in ${username}...`);
-        return new Promise(resolve => setTimeout(() => {
-            resolve({ success: true, user: { id: 'user-123', username, rating: 1520, gold: 5000, gems: 250 } });
-        }, 200));
-    },
-    async findMatch() {
-        console.log("API: Finding match...");
-        return new Promise(resolve => setTimeout(() => {
-            resolve({ success: true, match: { id: `match_${Math.random().toString(36).substr(2, 9)}`, opponent: { username: 'AI_Admiral', rating: 1500 } } });
-        }, 500));
-    },
-    async placeFleet(matchId, fleet) {
-        console.log("API: Player fleet placed for match", matchId);
-        return new Promise(resolve => setTimeout(() => {
-            resolve({ success: true });
-        }, 200));
-    },
-    async fireShot(matchId, x, y) {
-        const result = App.Game.opponent.grid.receiveShot(x, y);
-        return new Promise(resolve => setTimeout(() => resolve({ success: true, ...result }), 100));
-    },
-    async getMatchHistory() {
-        return new Promise(resolve => setTimeout(() => {
-            resolve({ success: true, history: [ { id: 'match_abc123', opponent: 'AI_Cruiser', result: 'Victory' }, { id: 'match_def456', opponent: 'AI_Destroyer', result: 'Victory' }, { id: 'match_ghi789', opponent: 'AI_Admiral', result: 'Defeat' } ]});
-        }, 300));
-    },
-    async getStoreItems() {
-        return new Promise(resolve => setTimeout(() => {
-            resolve({ success: true, items: [ { id: 'skin_01', name: 'Holographic Skin', type: 'ship_skin', price: 500, currency: 'gold' }, { id: 'skin_02', name: 'Gilded Fleet Skin', type: 'ship_skin', price: 100, currency: 'gems' } ]});
-        }, 300));
+// --- GLOBAL APP NAMESPACE & CONFIG ---
+const App = {
+    config: {
+        GRID_SIZE: 12,
+        FLEET_TEMPLATE: [
+            { name: 'carrier', length: 5 },
+            { name: 'battleship', length: 4 },
+            { name: 'cruiser', length: 3 },
+            { name: 'submarine', length: 3 },
+            { name: 'destroyer', length: 2 },
+        ]
     }
 };
 
@@ -88,28 +51,136 @@ App.UI = {
         const topLabels = document.querySelectorAll('.grid-labels-top');
         const leftLabels = document.querySelectorAll('.grid-labels-left');
         let topHTML = '';
-        for (let i = 0; i < App.config.GRID_SIZE; i++) {
-            topHTML += `<span>${String.fromCharCode(65 + i)}</span>`;
-        }
+        for (let i = 0; i < App.config.GRID_SIZE; i++) { topHTML += `<span>${String.fromCharCode(65 + i)}</span>`; }
         let leftHTML = '';
-        for (let i = 1; i <= App.config.GRID_SIZE; i++) {
-            leftHTML += `<span>${i}</span>`;
-        }
+        for (let i = 1; i <= App.config.GRID_SIZE; i++) { leftHTML += `<span>${i}</span>`; }
         topLabels.forEach(el => el.innerHTML = topHTML);
         leftLabels.forEach(el => el.innerHTML = leftHTML);
     },
-    drawGrid(element) { /* Unchanged */ },
-    drawShip(gridEl, ship) { /* Unchanged */ },
-    async animateProjectile(fromGrid, toGrid, toX, toY) { /* Unchanged */ },
-    renderShot(gridEl, x, y, result) { /* Unchanged */ },
-    updatePlayerInfo(user, opponent) { /* Unchanged */ },
-    updateMatchInfo(id) { /* Unchanged */ },
-    updateStatus(text) { /* Unchanged */ },
-    toggleActivePlayer(isPlayerTurn) { /* Unchanged */ },
-    async showModal(modalId, show) { /* Unchanged */ },
-    async renderMatchHistory() { /* Unchanged */ },
-    async renderStoreItems() { /* Unchanged */ },
-    showGameOver(isVictory) { /* Unchanged */ }
+    drawGrid(element) {
+        element.innerHTML = '';
+        for (let y = 0; y < App.config.GRID_SIZE; y++) {
+            for (let x = 0; x < App.config.GRID_SIZE; x++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.dataset.x = x;
+                cell.dataset.y = y;
+                element.appendChild(cell);
+            }
+        }
+    },
+    drawShip(gridEl, ship) {
+        const shipEl = document.createElement('div');
+        shipEl.className = `ship ${ship.name} ${ship.isVertical ? 'vertical' : ''}`;
+        shipEl.style.left = `calc(var(--cell-size) * ${ship.x})`;
+        shipEl.style.top = `calc(var(--cell-size) * ${ship.y})`;
+        shipEl.dataset.shipName = ship.name;
+        gridEl.appendChild(shipEl);
+        return shipEl;
+    },
+    async animateProjectile(fromGrid, toGrid, toX, toY) {
+        const projectile = document.createElement('div');
+        projectile.className = 'projectile';
+        document.body.appendChild(projectile);
+        const startRect = fromGrid.getBoundingClientRect();
+        const endCell = toGrid.querySelector(`[data-x='${toX}'][data-y='${toY}']`);
+        const endRect = endCell.getBoundingClientRect();
+        const startX = startRect.left + startRect.width / 2;
+        const startY = startRect.top + startRect.height / 2;
+        const endX = endRect.left + endRect.width / 2;
+        const endY = endRect.top + endRect.height / 2;
+        const angle = Math.atan2(endY - startY, endX - startX) * 180 / Math.PI + 90;
+        projectile.style.left = `${startX}px`;
+        projectile.style.top = `${startY}px`;
+        projectile.style.transform = `rotate(${angle}deg)`;
+        return new Promise(resolve => {
+            setTimeout(() => {
+                projectile.style.left = `${endX}px`;
+                projectile.style.top = `${endY}px`;
+            }, 50);
+            setTimeout(() => {
+                projectile.remove();
+                resolve();
+            }, 550);
+        });
+    },
+    renderShot(gridEl, x, y, result) {
+        const cell = gridEl.querySelector(`[data-x='${x}'][data-y='${y}']`);
+        cell.classList.add('locked');
+        const marker = document.createElement('div');
+        marker.className = `marker ${result}`;
+        cell.appendChild(marker);
+    },
+    updatePlayerInfo(user, opponent) {
+        this.playerUsernameEl.textContent = user.username;
+        this.playerGoldEl.textContent = user.gold;
+        this.playerGemsEl.textContent = user.gems;
+        if (opponent) {
+            this.opponentUsernameEl.textContent = opponent.username;
+            this.opponentRatingEl.textContent = `Rating: ${opponent.rating}`;
+        }
+    },
+    updateMatchInfo(id) { this.matchIdEl.textContent = `Match ID: ${id}`; },
+    updateStatus(text) { this.statusEl.textContent = text; },
+    toggleActivePlayer(isPlayerTurn) {
+        document.getElementById('player-side').classList.toggle('active', isPlayerTurn);
+        document.getElementById('opponent-side').classList.toggle('active', !isPlayerTurn);
+    },
+    showModal(modalId, show) {
+        const modal = document.getElementById(modalId);
+        if (show) {
+            if (modalId === 'match-history-modal') this.renderMatchHistory();
+            if (modalId === 'store-modal') this.renderStoreItems();
+            modal.classList.add('visible');
+        } else {
+            modal.classList.remove('visible');
+        }
+    },
+    renderMatchHistory() {
+        const testHistory = [
+            { id: 'match_abc123', opponent: 'AI_Cruiser', result: 'Victory' },
+            { id: 'match_def456', opponent: 'AI_Destroyer', result: 'Victory' },
+            { id: 'match_ghi789', opponent: 'AI_Admiral', result: 'Defeat' },
+        ];
+        const listEl = document.getElementById('history-list');
+        listEl.innerHTML = testHistory.map(item => `
+            <div class="history-item">
+                <span>vs ${item.opponent}</span>
+                <span class="result-${item.result}">${item.result}</span>
+                <code>${item.id}</code>
+            </div>
+        `).join('');
+    },
+    renderStoreItems() {
+        const testItems = [
+            { id: 'skin_01', name: 'Holographic Skin', type: 'ship_skin', price: 500, currency: 'gold' },
+            { id: 'skin_02', name: 'Gilded Fleet Skin', type: 'ship_skin', price: 100, currency: 'gems' },
+            { id: 'pack_01', name: '1000 Gold', type: 'currency', price: 50, currency: 'gems' },
+        ];
+        const itemsEl = document.getElementById('store-items');
+        itemsEl.innerHTML = testItems.map(item => `
+            <div class="store-item" data-item-id="${item.id}">
+                <span>${item.name}</span>
+                <div>
+                    <span>${item.price} ${item.currency === 'gold' ? '🪙' : '💎'}</span>
+                    <button class="cta-button secondary">Purchase</button>
+                </div>
+            </div>
+        `).join('');
+        // Add event listeners to the new purchase buttons
+        itemsEl.querySelectorAll('.store-item button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const itemId = e.target.closest('.store-item').dataset.itemId;
+                alert(`Transaction initiated for item: ${itemId}. (This would call the API).`);
+                console.log(`Purchase initiated for item: ${itemId}`);
+            });
+        });
+    },
+    showGameOver(isVictory) {
+        document.getElementById('game-over-title').textContent = isVictory ? "VICTORY" : "DEFEAT";
+        document.getElementById('game-over-message').textContent = isVictory ? "You have destroyed the enemy fleet!" : "Your entire fleet has been sunk.";
+        this.showModal('game-over-modal', true);
+    }
 };
 
 // --- CORE GAME MODELS ---
@@ -161,7 +232,6 @@ App.Models = {
             // AI-specific state
             this.aiTargetMode = false;
             this.aiHitQueue = [];
-            this.aiKnownHits = [];
         }
     }
 };
@@ -169,26 +239,30 @@ App.Models = {
 // --- GAME CONTROLLER ---
 App.GameController = {
     state: {},
-    async init() {
+    init() {
         App.UI.init();
-        const username = localStorage.getItem('loggedInUser');
+        const username = sessionStorage.getItem('loggedInUser');
         if (!username) { window.location.href = 'login.html'; return; }
-        const { user } = await App.ApiService.login(username);
-        this.state.currentUser = user;
-        App.UI.updatePlayerInfo(user);
+        
+        // This replaces ApiService.login
+        this.state.currentUser = { username, rating: 1520, gold: 5000, gems: 250 };
+        App.UI.updatePlayerInfo(this.state.currentUser);
         this.start();
     },
-    async start() {
+    start() {
         App.UI.showModal('game-over-modal', false);
         this.state.gameState = 'MATCHING';
         App.UI.updateStatus("Searching for an opponent...");
-        const { match } = await App.ApiService.findMatch();
-        this.state.match = match;
-        this.state.player = new App.Models.Player();
-        this.state.opponent = new App.Models.Player(true);
-        App.UI.updatePlayerInfo(this.state.currentUser, match.opponent);
-        App.UI.updateMatchInfo(match.id);
-        this.enterPlacementState();
+        
+        // This replaces ApiService.findMatch
+        setTimeout(() => {
+            this.state.match = { id: `match_${Math.random().toString(36).substr(2, 9)}`, opponent: { username: 'AI_Admiral', rating: 1500 } };
+            this.state.player = new App.Models.Player();
+            this.state.opponent = new App.Models.Player(true);
+            App.UI.updatePlayerInfo(this.state.currentUser, this.state.match.opponent);
+            App.UI.updateMatchInfo(this.state.match.id);
+            this.enterPlacementState();
+        }, 500);
     },
     enterPlacementState() {
         this.state.gameState = 'PLACEMENT';
@@ -204,7 +278,7 @@ App.GameController = {
         const ship = App.config.FLEET_TEMPLATE[this.state.placement.fleetIndex];
         App.UI.updateStatus(`Place your ${ship.name}. Right-click to rotate.`);
     },
-    async onPlayerGridClick(cell) {
+    onPlayerGridClick(cell) {
         if (this.state.gameState !== 'PLACEMENT' || !cell.classList.contains('cell')) return;
         const x = parseInt(cell.dataset.x);
         const y = parseInt(cell.dataset.y);
@@ -224,20 +298,19 @@ App.GameController = {
         }
     },
     onPlayerGridHover(cell) {
-        if (this.state.gameState !== 'PLACEMENT' || !cell.classList.contains('cell')) return;
+        if (this.state.gameState !== 'PLACEMENT' || !cell.classList.contains('cell') || !App.config.FLEET_TEMPLATE[this.state.placement.fleetIndex]) return;
         if (this.state.placement.previewShip) this.state.placement.previewShip.remove();
         
         const shipInfo = App.config.FLEET_TEMPLATE[this.state.placement.fleetIndex];
-        const shipEl = App.UI.drawShip(cell, { ...shipInfo, x: 0, y: 0, isVertical: this.state.placement.isVertical });
+        const x = parseInt(cell.dataset.x);
+        const y = parseInt(cell.dataset.y);
+        const shipEl = App.UI.drawShip(App.UI.playerGrid, { ...shipInfo, x, y, isVertical: this.state.placement.isVertical });
         shipEl.classList.add('ship-preview');
         shipEl.style.opacity = '0.5';
         
-        const x = parseInt(cell.dataset.x);
-        const y = parseInt(cell.dataset.y);
         if (!this.state.player.grid.canPlace(shipInfo.length, x, y, this.state.placement.isVertical)) {
             shipEl.style.background = 'rgba(255, 0, 0, 0.5)';
         }
-        
         this.state.placement.previewShip = shipEl;
     },
     onPlayerGridMouseOut() {
@@ -258,13 +331,14 @@ App.GameController = {
         App.UI.playerGrid.classList.remove('placement-mode');
         this.onPlayerGridMouseOut();
     },
-    async enterBattleState() {
+    enterBattleState() {
         this.state.gameState = 'BATTLE';
         App.UI.deployBtn.classList.add('hidden');
         App.UI.updateStatus("Deploying fleet to combat zone...");
-        await App.ApiService.placeFleet(this.state.match.id, this.state.player.grid.ships);
-        this.state.opponent.grid = new App.Models.Grid(); // Reset AI grid
-        const opponentFleetLayout = App.ApiService.generateAIFleetLayout(); // Simulate getting layout from server
+        
+        // This replaces ApiService.placeFleet
+        this.state.opponent.grid = new App.Models.Grid();
+        const opponentFleetLayout = this.generateAIFleetLayout();
         opponentFleetLayout.forEach(ship => this.state.opponent.grid.addShip(ship));
         
         this.state.isPlayerTurn = true;
@@ -280,13 +354,11 @@ App.GameController = {
         const y = parseInt(cell.dataset.y);
 
         await App.UI.animateProjectile(App.UI.playerGrid, App.UI.opponentGrid, x, y);
-        const { result, shipName } = await App.ApiService.fireShot(this.state.match.id, x, y);
-        App.UI.renderShot(App.UI.opponentGrid, x, y, result);
+        const result = this.state.opponent.grid.receiveShot(x, y);
+        App.UI.renderShot(App.UI.opponentGrid, x, y, result.result);
         
-        if (result === 'sunk') {
-            App.UI.updateStatus(`You sunk their ${shipName}!`);
-            const sunkShipEl = App.UI.drawShip(App.UI.opponentGrid, this.state.opponent.grid.ships.find(s => s.name === shipName));
-            sunkShipEl.classList.add('sunk');
+        if (result.result === 'sunk') {
+            App.UI.updateStatus(`You sunk their ${result.shipName}!`);
             if (this.state.opponent.grid.ships.every(s => s.hits >= s.length)) {
                 this.endGame(true); return;
             }
@@ -314,20 +386,18 @@ App.GameController = {
             this.state.isPlayerTurn = true;
             App.UI.toggleActivePlayer(true);
             App.UI.updateStatus("Your turn, Captain.");
-        }, 1500);
+        }, 1200);
     },
     getAIMove() {
         const ai = this.state.opponent;
-        // Target Mode: Fire from the queue
         while(ai.aiHitQueue.length > 0) {
             const target = ai.aiHitQueue.shift();
-            if (this.state.player.grid.grid[target.y][target.x] !== 'hit' && this.state.player.grid.grid[target.y][target.x] !== 'miss') {
+            const cellState = this.state.player.grid.grid[target.y][target.x];
+            if (cellState !== 'hit' && cellState !== 'miss') {
                 return target;
             }
         }
-        // Hunt Mode: Fire at random
         ai.aiTargetMode = false;
-        ai.aiKnownHits = [];
         let x, y;
         do {
             x = Math.floor(Math.random() * App.config.GRID_SIZE);
@@ -339,8 +409,6 @@ App.GameController = {
         const ai = this.state.opponent;
         if (result === 'hit') {
             ai.aiTargetMode = true;
-            ai.aiKnownHits.push({x,y});
-            // Add adjacent cells to queue
             [{x:x, y:y-1}, {x:x, y:y+1}, {x:x-1, y:y}, {x:x+1, y:y}].forEach(p => {
                 if(p.x >= 0 && p.x < App.config.GRID_SIZE && p.y >= 0 && p.y < App.config.GRID_SIZE) {
                     ai.aiHitQueue.push(p);
@@ -349,13 +417,31 @@ App.GameController = {
         } else if (result === 'sunk') {
             ai.aiTargetMode = false;
             ai.aiHitQueue = [];
-            ai.aiKnownHits = [];
         }
     },
     endGame(playerWon) {
         this.state.gameState = 'GAMEOVER';
         App.UI.updateStatus(playerWon ? "VICTORY!" : "DEFEAT!");
         App.UI.showGameOver(playerWon);
+    },
+    generateAIFleetLayout() {
+        const fleet = [];
+        const grid = new App.Models.Grid();
+        App.config.FLEET_TEMPLATE.forEach(shipInfo => {
+            let placed = false;
+            while (!placed) {
+                const x = Math.floor(Math.random() * App.config.GRID_SIZE);
+                const y = Math.floor(Math.random() * App.config.GRID_SIZE);
+                const isVertical = Math.random() < 0.5;
+                if (grid.canPlace(shipInfo.length, x, y, isVertical)) {
+                    const newShip = { ...shipInfo, x, y, isVertical, hits: 0 };
+                    grid.addShip(newShip);
+                    fleet.push(newShip);
+                    placed = true;
+                }
+            }
+        });
+        return fleet;
     }
 };
 
