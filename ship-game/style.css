@@ -1,0 +1,164 @@
+:root {
+    --grid-size: 10;
+    --cell-size: 40px;
+    --grid-bg: #2c3e50;
+    --water-color: #3498db;
+    --ship-color: #bdc3c7;
+    --ship-border: #7f8c8d;
+    --hit-color: #e74c3c;
+    --miss-color: #95a5a6;
+    --font-color: #ecf0f1;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--grid-bg);
+    color: var(--font-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+.game-container {
+    text-align: center;
+}
+
+.game-header h1 {
+    font-weight: 300;
+    font-size: 3rem;
+}
+
+#game-status {
+    font-size: 1.2rem;
+    height: 30px;
+    margin: 1rem 0;
+}
+
+#start-game-btn {
+    padding: 10px 20px;
+    font-size: 1rem;
+    background-color: #e67e22;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#start-game-btn:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+}
+
+.game-boards {
+    display: flex;
+    gap: 4rem;
+    margin-top: 2rem;
+}
+
+.grid-container h2 {
+    font-weight: 300;
+    margin-bottom: 2rem;
+}
+
+.isometric-wrapper {
+    perspective: 1000px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(var(--grid-size), var(--cell-size));
+    grid-template-rows: repeat(var(--grid-size), var(--cell-size));
+    width: calc(var(--grid-size) * var(--cell-size));
+    height: calc(var(--grid-size) * var(--cell-size));
+    background-color: var(--water-color);
+    border: 2px solid #2980b9;
+    position: relative;
+    transform: rotateX(60deg) rotateZ(45deg);
+    transform-style: preserve-3d;
+    box-shadow: 10px 10px 20px rgba(0,0,0,0.4);
+}
+
+.cell {
+    width: var(--cell-size);
+    height: var(--cell-size);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-sizing: border-box;
+    position: relative;
+}
+
+#opponent-grid .cell:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    cursor: crosshair;
+}
+
+/* --- State Markers (Hits & Misses) --- */
+.marker {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    width: 50%;
+    height: 50%;
+}
+.marker.hit { background-color: var(--hit-color); box-shadow: 0 0 10px var(--hit-color); }
+.marker.miss { background-color: var(--miss-color); }
+
+/* --- Pen-Drawn Ship Styles --- */
+.ship {
+    position: absolute;
+    background-color: var(--ship-color);
+    border: 2px solid var(--ship-border);
+    box-sizing: border-box;
+    border-radius: 4px;
+    transform-origin: top left;
+    box-shadow: 5px 5px 5px rgba(0,0,0,0.3);
+    pointer-events: none; /* Ships don't intercept clicks */
+}
+
+/* Base ship types */
+.carrier { width: calc(var(--cell-size) * 5); height: var(--cell-size); }
+.battleship { width: calc(var(--cell-size) * 4); height: var(--cell-size); }
+.cruiser, .submarine { width: calc(var(--cell-size) * 3); height: var(--cell-size); }
+.destroyer { width: calc(var(--cell-size) * 2); height: var(--cell-size); }
+
+/* Vertical orientation */
+.ship.vertical {
+    transform: rotate(90deg) translateY(calc(var(--cell-size) * -1));
+}
+
+/* Ship details using pseudo-elements */
+.carrier::before { /* Flight deck line */
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: var(--ship-border);
+    transform: translateY(-50%);
+}
+.battleship::before, .cruiser::before { /* Superstructure/Bridge */
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20%;
+    height: 60%;
+    background: var(--ship-border);
+    transform: translate(-50%, -50%);
+    border-radius: 2px;
+}
+.submarine.horizontal::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: 45%;
+    width: 10%;
+    height: 10px;
+    background: var(--ship-border);
+    border-radius: 2px;
+}
