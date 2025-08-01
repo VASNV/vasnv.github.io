@@ -1,66 +1,78 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark"> <!-- Default to dark theme -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Data Suite</title>
+    <title>Stellar Data Suite</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Titillium+Web:wght@600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Orbitron:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div class="background-aurora"></div>
 
     <div class="container">
         <header class="main-header">
-            <h1>Advanced Data Suite</h1>
-            <p>A modern toolkit to parse, decode, and analyze data instantly.</p>
+            <h1>Stellar Data Suite</h1>
+            <div class="theme-switcher-wrapper">
+                <label class="theme-switcher">
+                    <input type="checkbox" id="theme-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
         </header>
 
         <nav class="tool-tabs">
-            <button class="tab-link active" data-tool="decoder">Data Decoder</button>
+            <button class="tab-link active" data-tool="decoder">2D Data Decoder</button>
             <button class="tab-link" data-tool="parser">DSV Parser & Extractor</button>
         </nav>
 
         <main class="tool-content-area">
-            <!-- Tool 1: Data Decoder -->
+            <!-- Tool 1: 2D Data Decoder (Updated) -->
             <div id="decoder" class="tool-content active">
-                <div class="interface-panel">
-                    <div class="input-section">
-                        <div class="input-header">
-                            <label for="decoder-input">Encoded Input (separated by ;)</label>
-                            <select id="encoding-type">
-                                <option value="base64">Base64</option>
-                                <option value="url">URL Encoding</option>
-                            </select>
-                        </div>
-                        <textarea id="decoder-input" placeholder="Paste your encoded string here..."></textarea>
+                <div class="interface-panel input-panel">
+                    <div class="panel-header">
+                        <label for="decoder-input">Encoded Input (Rows by <::>, Columns by ;)</label>
+                        <select id="encoding-type">
+                            <option value="base64">Base64</option>
+                            <option value="url">URL Encoding</option>
+                        </select>
+                    </div>
+                    <textarea id="decoder-input" placeholder="e.g., Value1;Value2<::>Value3;Value4;Value5"></textarea>
+                    <div class="prototype-buttons">
+                        <span>Try a Prototype:</span>
+                        <button class="prototype-btn" data-target="decoder-input" data-type="base64">2D Data (Base64)</button>
                     </div>
                 </div>
-                <div class="interface-panel">
-                    <div class="output-section">
-                        <h3 class="output-header">Decoded Output</h3>
-                        <div class="table-container" id="decoder-output-container">
-                            <!-- Decoder table will be injected here -->
-                        </div>
+                <div class="interface-panel output-panel">
+                    <div class="panel-header">
+                        <h3>Decoded Table</h3>
+                        <button class="copy-btn" data-target-table="decoder-output-container">Copy</button>
+                    </div>
+                    <div class="table-container" id="decoder-output-container">
+                        <!-- Decoder table will be injected here -->
                     </div>
                 </div>
             </div>
 
-            <!-- Tool 2: DSV Parser -->
+            <!-- Tool 2: DSV Parser (Unchanged) -->
             <div id="parser" class="tool-content">
-                <div class="interface-panel">
-                    <div class="input-section">
-                        <div class="input-header">
-                            <label for="parser-input">Raw Data (Rows separated by new lines, columns by ;)</label>
-                        </div>
-                        <textarea id="parser-input" placeholder="Paste your raw data here... e.g.\nUser;Email;Website\nJohn Doe;john@example.com;https://example.com\nИван Петров;ivan@site.ru;https://site.ru"></textarea>
+                <div class="interface-panel input-panel">
+                    <div class="panel-header">
+                        <label for="parser-input">Raw Data (Rows: new lines, Columns: ;)</label>
+                    </div>
+                    <textarea id="parser-input" placeholder="Paste your raw data here..."></textarea>
+                    <div class="prototype-buttons">
+                        <span>Try a Prototype:</span>
+                        <button class="prototype-btn" data-target="parser-input">Sample Data</button>
                     </div>
                 </div>
-                 <div class="interface-panel">
-                    <div class="output-section">
-                        <h3 class="output-header">Parsed Table & Statistics</h3>
-                        <div class="table-container" id="parser-output-container">
-                             <!-- Parser table will be injected here -->
-                        </div>
+                <div class="interface-panel output-panel">
+                    <div class="panel-header">
+                        <h3>Parsed Table & Statistics</h3>
+                         <button class="copy-btn" data-target-table="parser-output-container">Copy</button>
+                    </div>
+                    <div class="table-container" id="parser-output-container">
+                         <!-- Parser table will be injected here -->
                     </div>
                 </div>
             </div>
