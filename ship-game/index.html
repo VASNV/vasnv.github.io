@@ -32,25 +32,34 @@
         <main class="game-boards">
             <div class="grid-container" id="player-side">
                 <div class="grid-label">Your Sector</div>
-                <div class="isometric-wrapper">
-                    <div class="grid" id="player-grid"></div>
+                <div class="grid-wrapper">
+                    <div class="grid-labels-top"></div>
+                    <div class="grid-labels-left"></div>
+                    <div class="isometric-wrapper">
+                        <div class="grid" id="player-grid"></div>
+                    </div>
                 </div>
             </div>
             <div class="grid-container" id="opponent-side">
                 <div class="grid-label">Enemy Sector</div>
-                <div class="isometric-wrapper">
-                    <div class="grid" id="opponent-grid"></div>
+                 <div class="grid-wrapper">
+                    <div class="grid-labels-top"></div>
+                    <div class="grid-labels-left"></div>
+                    <div class="isometric-wrapper">
+                        <div class="grid" id="opponent-grid"></div>
+                    </div>
                 </div>
             </div>
         </main>
         
         <div class="game-controls">
-            <button id="store-btn" class="cta-button">Store</button>
-            <button id="history-btn" class="cta-button">Match History</button>
+            <button id="deploy-btn" class="cta-button hidden">Deploy Fleet</button>
+            <button id="store-btn" class="cta-button secondary">Store</button>
+            <button id="history-btn" class="cta-button secondary">Match History</button>
         </div>
     </div>
 
-    <!-- All Modals -->
+    <!-- All Modals (structure unchanged) -->
     <div id="game-over-modal" class="modal-overlay">
         <div class="game-panel modal-content">
             <h2 id="game-over-title"></h2>
