@@ -11,18 +11,20 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('theme', newTheme);
     });
 
-    // --- Tab Management ---
+    // --- TAB MANAGEMENT ---
     const tabs = document.querySelectorAll('.tab-link');
     const toolContents = document.querySelectorAll('.tool-content');
+
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
             tabs.forEach(item => item.classList.remove('active'));
             toolContents.forEach(content => content.classList.remove('active'));
+
             tab.classList.add('active');
             document.getElementById(tab.dataset.tool).classList.add('active');
         });
     });
-    
+
     // --- HELPER FUNCTIONS ---
     const createTableHTML = (id) => `<table class="results-table" id="${id}"></table>`;
     const renderPlaceholder = (container, message) => {
@@ -35,8 +37,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const table = container.querySelector('table');
         table.innerHTML = `<tbody><tr><td class="error" colspan="100%">${message}</td></tr></tbody>`;
     };
-    
-    // --- TOOL 1: 2D DATA DECODER (REBUILT LOGIC) ---
+
+    // --- TOOL 1: 2D DATA DECODER ---
     const decoderInput = document.getElementById('decoder-input');
     const encodingTypeSelect = document.getElementById('encoding-type');
     const decoderOutputContainer = document.getElementById('decoder-output-container');
@@ -56,17 +58,13 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (encodingType === 'url') decodedText = decodeURIComponent(encodedText);
             else throw new Error('Unsupported encoding type.');
 
-            // 1. Split by <::> to get rows
             const rows = decodedText.split('<::>').map(r => r.trim()).filter(r => r);
             if (rows.length === 0) {
                 renderPlaceholder(decoderOutputContainer, 'No rows found in data.');
                 return;
             }
 
-            // 2. Split each row by ; to get columns, creating a 2D array
             const tableData = rows.map(row => row.split(';'));
-            
-            // 3. Find the maximum number of columns to build a consistent table
             const maxColumns = Math.max(0, ...tableData.map(row => row.length));
             if (maxColumns === 0) {
                  renderPlaceholder(decoderOutputContainer, 'No columns found in data.');
@@ -75,21 +73,17 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const table = new DOMParser().parseFromString(createTableHTML('decoder-table'), 'text/html').querySelector('table');
 
-            // 4. Build Table Header
             let headerHTML = '<thead><tr><th class="row-header">#</th>';
-            for (let i = 1; i <= maxColumns; i++) {
-                headerHTML += `<th>Column ${i}</th>`;
-            }
+            for (let i = 1; i <= maxColumns; i++) headerHTML += `<th>Column ${i}</th>`;
             headerHTML += '</tr></thead>';
             table.innerHTML = headerHTML;
             
-            // 5. Build Table Body
             const tbody = document.createElement('tbody');
             tableData.forEach((row, rowIndex) => {
                 const tr = document.createElement('tr');
                 let rowHTML = `<td class="row-header">${rowIndex + 1}</td>`;
                 for (let i = 0; i < maxColumns; i++) {
-                    const cellData = row[i] || ''; // Use empty string for missing cells
+                    const cellData = row[i] || '';
                     rowHTML += `<td>${cellData.replace(/</g, "<")}</td>`;
                 }
                 tr.innerHTML = rowHTML;
@@ -97,13 +91,11 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             table.appendChild(tbody);
 
-            // 6. Build Table Footer
             const totalCells = tableData.reduce((acc, row) => acc + row.length, 0);
             const tfoot = document.createElement('tfoot');
             tfoot.innerHTML = `<tr><td colspan="${maxColumns + 1}">Total Rows: ${rows.length} | Total Cells: ${totalCells}</td></tr>`;
             table.appendChild(tfoot);
 
-            // 7. Render the complete table
             decoderOutputContainer.innerHTML = '';
             decoderOutputContainer.appendChild(table);
 
@@ -111,50 +103,89 @@ document.addEventListener('DOMContentLoaded', () => {
             renderError(decoderOutputContainer, 'Decoding Error: Invalid input string.');
         }
     };
+    decoderInput.addEventListener('input', handleDecode);
+    encodingTypeSelect.addEventListener('change', handleDecode);
 
-    // --- TOOL 2: DSV PARSER (Unchanged) ---
+
+    // --- TOOL 2: DSV PARSER & EXTRACTOR ---
     const parserInput = document.getElementById('parser-input');
     const parserOutputContainer = document.getElementById('parser-output-container');
     let parserTimeout;
+
     const handleParseAndExtract = () => {
-        // This function from the previous response remains unchanged.
-        // It correctly handles its own logic based on newlines and semicolons.
         clearTimeout(parserTimeout);
         const rawText = parserInput.value.trim();
+
         if (!rawText) {
-            renderPlaceholder(parserOutputContainer, 'Parsed table and statistics will appear here.');
+            renderPlaceholder(parserOutputContainer, 'Parsed table will appear here.');
             return;
         }
-        renderPlaceholder(parserOutputContainer, '<div class="shimmer-cell" style="height:150px; width:100%"></div>');
+
+        renderPlaceholder(parserOutputContainer, '...'); // Simple preloader
+
         parserTimeout = setTimeout(() => {
             try {
-                const rows = rawText.split('\n').filter(r => r.trim() !== '');
-                const tableData = rows.map(row => row.split(';'));
-                const columnCount = Math.max(...tableData.map(row => row.length), 0);
-                if (columnCount === 0) { renderPlaceholder(parserOutputContainer, 'No data to display.'); return; }
-                const table = new DOMParser().parseFromString(createTableHTML('parser-table'), 'text/html').querySelector('table');
-                let headerHTML = '<tr><th class="row-header">#</th>';
-                for(let i=1; i<=columnCount; i++) headerHTML += `<th>Column ${i}</th>`;
-                headerHTML += '</tr>';
-                table.innerHTML = `<thead>${headerHTML}</thead>`;
-                const tbody = document.createElement('tbody');
-                tableData.forEach((row, rowIndex) => { const tr = document.createElement('tr'); let rowHTML = `<td class="row-header">${rowIndex + 1}</td>`; for(let i=0; i<columnCount; i++) { rowHTML += `<td>${(row[i] || '').replace(/</g, "<")}</td>`; } tr.innerHTML = rowHTML; tbody.appendChild(tr); });
-                table.appendChild(tbody);
-                const urlRegex = /https?:\/\/[^\s/$.?#].[^\s]*/gi; const foundUrls = rawText.match(urlRegex) || []; const tldCounts = {}; const commonTlds = new Set(['com', 'ru', 'su', 'org', 'net', 'gov', 'edu', 'io', 'co', 'uk', 'de', 'fr', 'jp', 'cn']);
-                foundUrls.forEach(url => { try { const hostname = new URL(url).hostname; const parts = hostname.split('.'); const tld = parts[parts.length - 1]; if (commonTlds.has(tld)) { tldCounts[tld] = (tldCounts[tld] || 0) + 1; } } catch (e) {} });
-                let statsHTML = `Total Rows: ${rows.length}. `; const sortedTlds = Object.entries(tldCounts).sort((a,b) => b[1] - a[1]);
-                if(sortedTlds.length > 0) { statsHTML += `| Domain Stats: ${sortedTlds.map(([tld, count]) => `.${tld} (${count})`).join(', ')}`; }
-                const tfoot = document.createElement('tfoot'); tfoot.innerHTML = `<tr><td colspan="${columnCount + 1}">${statsHTML}</td></tr>`; table.appendChild(tfoot);
-                parserOutputContainer.innerHTML = ''; parserOutputContainer.appendChild(table);
-            } catch (e) { console.error(e); renderError(parserOutputContainer, 'Error parsing data. Check format.'); }
-        }, 500);
-    };
+                const allRows = rawText.split('\n').filter(r => r.trim() !== '');
+                if (allRows.length === 0) {
+                    renderPlaceholder(parserOutputContainer, 'No data to display.');
+                    return;
+                }
 
-    // --- PROTOTYPE & COPY BUTTONS (with updated prototype data) ---
+                const headerCells = allRows.shift().split(';');
+                const dataRows = allRows;
+                const columnCount = headerCells.length;
+
+                const table = new DOMParser().parseFromString(createTableHTML('parser-table'), 'text/html').querySelector('table');
+
+                let headerHTML = '<thead><tr><th class="row-header">#</th>';
+                headerCells.forEach(cell => {
+                    headerHTML += `<th>${cell.replace(/</g, "<")}</th>`;
+                });
+                headerHTML += '</tr></thead>';
+                table.innerHTML = headerHTML;
+                
+                const tbody = document.createElement('tbody');
+                dataRows.forEach((rowString, rowIndex) => {
+                    const rowCells = rowString.split(';');
+                    const tr = document.createElement('tr');
+                    let rowHTML = `<td class="row-header">${rowIndex + 1}</td>`;
+                    for (let i = 0; i < columnCount; i++) {
+                        const cellData = rowCells[i] || '';
+                        rowHTML += `<td>${cellData.replace(/</g, "<")}</td>`;
+                    }
+                    tr.innerHTML = rowHTML;
+                    tbody.appendChild(tr);
+                });
+                table.appendChild(tbody);
+                
+                const statsHTML = `Total Data Rows: ${dataRows.length}`;
+                const tfoot = document.createElement('tfoot');
+                tfoot.innerHTML = `<tr><td colspan="${columnCount + 1}">${statsHTML}</td></tr>`;
+                table.appendChild(tfoot);
+
+                parserOutputContainer.innerHTML = '';
+                parserOutputContainer.appendChild(table);
+
+            } catch (e) {
+                console.error(e);
+                renderError(parserOutputContainer, 'Error parsing data. Check format.');
+            }
+        }, 300);
+    };
+    parserInput.addEventListener('input', handleParseAndExtract);
+
+
+    // --- GOODIES & PROTOTYPES ---
     const prototypes = {
         'decoder-input-base64': 'Sm9obiBEb2U7am9obkBleGFtcGxlLmNvbTw6OmpBTmUgU21pdGg7amFuZUBleGFtcGxlLm9yZztBZG1pbjw6Oj5LZXZpbjtrZXZpbkBzaXRlLnJ1',
-        'parser-input': `User;Email;Website\nJohn Doe;john@example.com;https://example.com\nИван Петров;ivan@site.ru;https://site.ru\nJane Smith;jane@example.org;https://example.org`
+        'parser-input': `Ship_ID;Ship_Type;Length;Start_Coordinate;Orientation;Status
+SHIP-01;Aircraft Carrier;5;J6;Vertical;Intact
+SHIP-02;Battleship;4;B2;Horizontal;Intact
+SHIP-03;Cruiser;3;E5;Vertical;Intact
+SHIP-04;Submarine;3;G8;Horizontal;Intact
+SHIP-05;Destroyer;2;A9;Vertical;Intact`
     };
+
     document.querySelectorAll('.prototype-btn').forEach(button => {
         button.addEventListener('click', () => {
             const targetId = button.dataset.target;
@@ -167,22 +198,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelectorAll('.copy-btn').forEach(button => {
         button.addEventListener('click', () => {
-            const table = document.querySelector(`#${button.dataset.targetTable} table`);
+            const tableContainerId = button.dataset.targetTable;
+            const table = document.querySelector(`#${tableContainerId} table`);
             if (!table) return;
+
             navigator.clipboard.writeText(table.innerText).then(() => {
                 const originalText = button.innerText;
                 button.innerText = 'Copied!';
                 button.classList.add('copied');
-                setTimeout(() => { button.innerText = originalText; button.classList.remove('copied'); }, 2000);
+                setTimeout(() => {
+                    button.innerText = originalText;
+                    button.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
             });
         });
     });
 
-    // --- INITIALIZE VIEWS ---
+
+    // --- INITIALIZE APP STATE ---
     renderPlaceholder(decoderOutputContainer, 'Decoded table will appear here.');
-    renderPlaceholder(parserOutputContainer, 'Parsed table and statistics will appear here.');
+    renderPlaceholder(parserOutputContainer, 'Parsed table will appear here.');
     
-    decoderInput.addEventListener('input', handleDecode);
-    encodingTypeSelect.addEventListener('change', handleDecode);
-    parserInput.addEventListener('input', handleParseAndExtract);
+    // Default to the DSV Parser tab on load
+    document.querySelector('.tab-link[data-tool="parser"]').classList.add('active');
+    document.querySelector('#parser').classList.add('active');
+    document.querySelector('.tab-link[data-tool="decoder"]').classList.remove('active');
+    document.querySelector('#decoder').classList.remove('active');
 });
