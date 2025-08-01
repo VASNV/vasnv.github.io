@@ -1,7 +1,7 @@
 // --- GLOBAL APP NAMESPACE & CONFIG ---
 const App = {
     config: {
-        GRID_SIZE: 14,
+        GRID_SIZE: 20,
         FLEET_TEMPLATE: [
             { name: 'carrier', length: 5 },
             { name: 'battleship', length: 4 },
