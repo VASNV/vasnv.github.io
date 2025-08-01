@@ -21,10 +21,12 @@
         </div>
     </div>
     <script>
+        // Standalone login simulation
         document.getElementById('login-form').addEventListener('submit', (e) => {
             e.preventDefault();
-            // In a real app, you would call an ApiService here.
-            localStorage.setItem('loggedInUser', e.target.querySelector('input[type="text"]').value);
+            const username = e.target.querySelector('input[type="text"]').value || 'Captain_Default';
+            // Use sessionStorage to pass data for the current session
+            sessionStorage.setItem('loggedInUser', username);
             window.location.href = 'index.html';
         });
     </script>
