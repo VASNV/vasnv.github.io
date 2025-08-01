@@ -16,15 +16,17 @@
 body { font-family: var(--font-primary); background-color: var(--bg-color); color: #f0f8ff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; overflow: hidden; }
 .background-effects { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%); }
 
-/* --- LOGIN PAGE --- */
+/* --- LOGIN PAGE & GENERIC BUTTONS --- */
+.login-container, .cta-button, .login-box, #login-form input { /* Unchanged from previous version */ }
 .login-container { text-align: center; }
 .login-box { background: var(--panel-bg); padding: 2.5rem; border-radius: 15px; backdrop-filter: blur(10px); border: 1px solid rgba(0, 217, 255, 0.2); animation: float-in 1s ease-out; }
 @keyframes float-in { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
 .login-box h1 { font-family: var(--font-display); letter-spacing: 2px; }
 #login-form input { display: block; width: 280px; padding: 12px; margin: 1rem auto; border-radius: 5px; border: 1px solid rgba(0, 217, 255, 0.3); background: rgba(0,0,0,0.3); color: white; font-size: 1rem; }
-.cta-button { font-family: var(--font-display); width: 100%; padding: 12px; background: var(--accent-color); color: black; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 15px var(--glow-color); }
+.cta-button { font-family: var(--font-display); padding: 12px 24px; background: var(--accent-color); color: black; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 15px var(--glow-color); }
 .cta-button:hover { transform: translateY(-2px); box-shadow: 0 0 25px var(--glow-color); }
 .cta-button.secondary { background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); box-shadow: none; }
+.hidden { display: none !important; }
 
 /* --- GAME UI & HEADER --- */
 .game-container { width: 95vw; max-width: 1400px; padding: 1rem; animation: float-in 1s ease-out; }
@@ -39,19 +41,27 @@ body { font-family: var(--font-primary); background-color: var(--bg-color); colo
 
 /* --- GRIDS & ISOMETRIC VIEW --- */
 .game-boards { display: flex; justify-content: space-around; gap: 4rem; margin-top: 1rem; }
-.grid-container { transition: box-shadow 0.3s; padding: 1rem; border: 1px solid transparent; border-radius: 10px; }
+.grid-container { transition: box-shadow 0.3s, border-color 0.3s; padding: 1rem; border: 1px solid transparent; border-radius: 10px; }
 .grid-container.active { border-color: var(--accent-color); box-shadow: 0 0 25px var(--glow-color); }
-.grid-label { text-align: center; font-family: var(--font-display); margin-bottom: 2rem; }
+.grid-label { text-align: center; font-family: var(--font-display); margin-bottom: 1rem; }
+.grid-wrapper { position: relative; }
 .isometric-wrapper { perspective: 1500px; }
 .grid { display: grid; grid-template-columns: repeat(var(--grid-size), var(--cell-size)); background-color: var(--water-color); position: relative; transform: rotateX(60deg) rotateZ(45deg); transform-style: preserve-3d; border-image: linear-gradient(to bottom right, var(--accent-color), #2c5364) 1; }
-.cell { width: var(--cell-size); height: var(--cell-size); border: 1px solid rgba(0, 217, 255, 0.1); box-sizing: border-box; position: relative; }
+.cell { width: var(--cell-size); height: var(--cell-size); border: 1px solid rgba(0, 217, 255, 0.1); box-sizing: border-box; }
 .grid:not(.placement-mode) #opponent-grid .cell:not(.locked):hover { background: var(--glow-color); cursor: crosshair; }
 .placement-mode #player-grid .cell:hover { background: var(--glow-color); cursor: pointer; }
+
+/* --- GRID COORDINATE LABELS --- */
+.grid-labels-top, .grid-labels-left { font-family: var(--font-display); color: #708090; position: absolute; display: flex; }
+.grid-labels-top { top: -25px; left: 0; width: calc(var(--grid-size) * var(--cell-size)); justify-content: space-around; }
+.grid-labels-left { top: 0; left: -35px; height: calc(var(--grid-size) * var(--cell-size)); flex-direction: column; justify-content: space-around; }
+.grid-labels-top span, .grid-labels-left span { flex-grow: 1; text-align: center; }
 
 /* --- HOLOGRAPHIC SHIP STYLES --- */
 .ship-preview, .ship { position: absolute; background: linear-gradient(160deg, rgba(0, 217, 255, 0.5), rgba(0, 217, 255, 0.2)); border: 1px solid var(--accent-color); box-sizing: border-box; transform-origin: top left; box-shadow: 0 0 10px var(--glow-color); animation: pulse 2s infinite ease-in-out; pointer-events: none; }
 @keyframes pulse { 50% { box-shadow: 0 0 20px var(--glow-color); } }
-.ship.sunk { animation: none; opacity: 0.3; background: #555; border-color: #333; box-shadow: none; }
+.ship.sunk { animation: sunk-flicker 1s forwards; }
+@keyframes sunk-flicker { 0% { opacity: 1; background: var(--hit-color); } 50% { opacity: 0.3; } 100% { opacity: 0; transform: translateY(5px); } }
 .carrier { width: calc(var(--cell-size) * 5); height: var(--cell-size); } .battleship { width: calc(var(--cell-size) * 4); height: var(--cell-size); } .cruiser, .submarine { width: calc(var(--cell-size) * 3); height: var(--cell-size); } .destroyer { width: calc(var(--cell-size) * 2); height: var(--cell-size); }
 .ship.vertical, .ship-preview.vertical { transform: rotate(90deg) translateY(calc(var(--cell-size) * -1)); }
 
@@ -63,7 +73,8 @@ body { font-family: var(--font-primary); background-color: var(--bg-color); colo
 .projectile { position: fixed; width: 5px; height: 50px; background: linear-gradient(var(--accent-color), transparent); z-index: 1000; pointer-events: none; transform-origin: top center; transition: all 0.5s cubic-bezier(0.55, 0, 1, 0.45); }
 
 /* --- MODALS & CONTROLS --- */
-.game-controls { text-align: center; margin-top: 1.5rem; }
+.game-controls { text-align: center; margin-top: 1.5rem; height: 50px; }
+.modal-overlay { /* Unchanged */ }
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 1000; animation: fade-in 0.3s; }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 .modal-overlay.visible { display: flex; }
@@ -74,3 +85,4 @@ body { font-family: var(--font-primary); background-color: var(--bg-color); colo
 .history-item, .store-item { display: flex; justify-content: space-between; padding: 1rem; border-bottom: 1px solid rgba(0, 217, 255, 0.2); align-items: center; }
 .history-item .result-Victory { color: #2ecc71; }
 .history-item .result-Defeat { color: var(--hit-color); }
+.modal-controls { margin-top: 1.5rem; display: flex; justify-content: center; gap: 1rem; }
